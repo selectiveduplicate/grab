@@ -24,18 +24,16 @@ fn count_matches<T: BufRead + Sized>(reader: T, re: Regex) -> u32 {
     matches
 }
 
-fn colorize_pattern(re: &Regex, line: &str) -> Option<String> {
-    match re.find(&line) {
-        Some(m) => Some(m.as_str().red().to_string()),
-        _ => None,
-    }
+fn colorize_pattern(pattern: &str) -> String {
+    pattern.red().to_string()
 }
 
+// This function is horrible. Just horrible code...
 fn choose_process<T: BufRead + Sized>(reader: T, re: Regex, flags: &Flags) {
-    if !flags.colorize {
-        if (flags.count && !flags.line_number) || (flags.count && flags.line_number) {
-            println!("{}", count_matches(reader, re));
-        } else if !flags.count && flags.line_number {
+    if flags.count {
+        println!("{}", count_matches(reader, re));
+    } else {
+        if flags.line_number && !flags.colorize {
             for (i, line_) in reader.lines().enumerate() {
                 let line = line_.unwrap();
                 match re.find(&line) {
@@ -43,7 +41,31 @@ fn choose_process<T: BufRead + Sized>(reader: T, re: Regex, flags: &Flags) {
                     None => (),
                 }
             }
-        } else if !flags.count && !flags.line_number {
+        } else if flags.line_number && flags.colorize {
+            for (i, line_) in reader.lines().enumerate() {
+                let line = line_.unwrap();
+                let pattern = match re.find(&line) {
+                    Some(m) => m.as_str(),
+                    None => "none",
+                };
+                if pattern != "none" {
+                    let colorized_pattern = colorize_pattern(&pattern);
+                    println!("{}: {}", i + 1, re.replace_all(&line, colorized_pattern));
+                }
+            }
+        } else if !flags.line_number && flags.colorize {
+            for line_ in reader.lines() {
+                let line = line_.unwrap();
+                let pattern = match re.find(&line) {
+                    Some(m) => m.as_str(),
+                    None => "none",
+                };
+                if pattern != "none" {
+                    let colorized_pattern = colorize_pattern(&pattern);
+                    println!("{}", re.replace_all(&line, colorized_pattern));
+                }
+            }
+        } else {
             for line_ in reader.lines() {
                 let line = line_.unwrap();
                 match re.find(&line) {
@@ -51,28 +73,6 @@ fn choose_process<T: BufRead + Sized>(reader: T, re: Regex, flags: &Flags) {
                     None => (),
                 }
             }
-        }
-    } else {
-        if !flags.count && !flags.line_number {
-            for line_ in reader.lines() {
-                let line = line_.unwrap();
-                let colorize_pattern = colorize_pattern(&re, &line).unwrap_or("none".to_string());
-                if colorize_pattern != "none" {
-                    let colorized_line = re.replace_all(&line, colorize_pattern);
-                    println!("{}", colorized_line);
-                }
-            }
-        } else if !flags.count && flags.line_number {
-            for (i, line_) in reader.lines().enumerate() {
-                let line = line_.unwrap();
-                let colorize_pattern = colorize_pattern(&re, &line).unwrap_or("none".to_string());
-                if colorize_pattern != "none" {
-                    let colorized_line = re.replace_all(&line, colorize_pattern);
-                    println!("{}: {}", i + 1, colorized_line);
-                }
-            }
-        } else {
-            println!("{}", count_matches(reader, re));
         }
     }
 }
