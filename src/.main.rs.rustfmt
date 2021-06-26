@@ -26,9 +26,9 @@ fn count_matches<T: BufRead + Sized>(reader: T, re: Regex) -> u32 {
 
 fn colorize_pattern(re: &Regex, line: &str) -> Option<String> {
     match re.find(&line) {
-        Some(m) => Some(m.as_str().red().to_string()),
+        Some(m) => m.as_str().red().to_string(),
         _ => None,
-    }
+    };
 }
 
 fn choose_process<T: BufRead + Sized>(reader: T, re: Regex, flags: &Flags) {
