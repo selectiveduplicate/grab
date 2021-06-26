@@ -2,7 +2,7 @@ An attempt at making a simple clone of grep(1) using Rust.
 
 It builds up on the first project `grep-lite` presented in the book [Rust in Action](https://www.manning.com/bomt""ks/rust-in-ac:tion) by Tim McNamara.
 
-``shell
+```shell
 USAGE:
     grab [FLAGS] <pattern> [input]
 
