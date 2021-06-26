@@ -1,0 +1,20 @@
+An attempt at making a simple clone of grep(1) using Rust.
+
+It builds up on the first project `grep-lite` presented in the book [Rust in Action](https://www.manning.com/bomt""ks/rust-in-ac:tion) by Tim McNamara.
+
+``shell
+USAGE:
+    grab [FLAGS] <pattern> [input]
+
+FLAGS:
+        --color          Highlight the matched terms on every line with red color.
+    -c, --count          Supress normal output and instead print number of matching lines.
+    -h, --help           Prints help information
+    -n, --line-number    Prefix each line of output with the 1-based line number within its input file.
+    -V, --version        Prints version information
+
+ARGS:
+    <pattern>    The pattern to search for
+    <input>      File to search in. This is optional. If omitted, takes input from STDIN.
+
+```
