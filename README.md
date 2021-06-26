@@ -1,7 +1,8 @@
-An attempt at making a simple clone of grep(1) using Rust.
+An attempt at making a simple clone of [grep(1)](https://www.man7.org/linux/man-pages/man1/grep.1.html) using Rust.
 
 It builds up on the first project `grep-lite` presented in the book [Rust in Action](https://www.manning.com/books/rust-in-action) by Tim McNamara.
 
+# Usage
 ```
 USAGE:
     grab [FLAGS] <pattern> [input]
