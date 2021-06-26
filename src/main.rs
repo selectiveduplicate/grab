@@ -29,10 +29,9 @@ fn colorize_pattern(re: &Regex, line: &str) -> Option<String> {
         Some(m) => m.as_str(),
         None => "none",
     };
-    if matched_term != "none" {
-        return Some(matched_term.red().to_string());
-    } else {
-        return None;
+    match matched_term {
+        "none" => None,
+        _ => Some(matched_term.red().to_string()),
     }
 }
 
@@ -77,7 +76,7 @@ fn choose_process<T: BufRead + Sized>(reader: T, re: Regex, flags: &Flags) {
                 }
             }
         } else {
-           println!("{}", count_matches(reader, re)); 
+            println!("{}", count_matches(reader, re));
         }
     }
 }
