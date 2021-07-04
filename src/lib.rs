@@ -10,11 +10,13 @@ use std::io::prelude::*;
 /// --count, -c
 /// --line-number, -n
 /// --color
+/// --ignore-case, -i
 /// ```
 pub struct Flags {
     pub count: bool,
     pub line_number: bool,
     pub colorize: bool,
+    pub ignore_case: bool,
 }
 
 /// Calculates the number of matches found according to the regex pattern and returns it

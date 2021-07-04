@@ -1,9 +1,9 @@
 //! Searches for patterns. Prints to the standard output after successful match.
 use clap::{App, Arg};
+use regex::RegexBuilder;
 use std::fs::File;
 use std::io;
 use std::io::BufReader;
-use regex::Regex;
 
 mod lib;
 
@@ -37,7 +37,7 @@ fn main() {
                 .required(false),
         )
         .arg(
-            Arg::with_name("line numbers")
+            Arg::with_name("line_number")
             .help("Prefix each line of output with the 1-based line number within its input file.")
             .short("n")
             .long("line-number")
@@ -51,22 +51,40 @@ fn main() {
             .takes_value(false)
             .required(false)
         )
+        .arg(
+            Arg::with_name("ignore_case")
+            .help("Ignore case distinctions (uppercase and lowercase) in patterns and input data, so that characters that differ only in case match each other.")
+            .long("ignore-case")
+            .short("i")
+            .takes_value(false)
+            .required(false)
+        )
         .get_matches();
 
     let pattern = args.value_of("pattern").unwrap();
     let input = args.value_of("input").unwrap_or("STDIN");
 
     let count_flag = args.is_present("count");
-    let line_number_flag = args.is_present("line numbers");
+    let line_number_flag = args.is_present("line_number");
     let color_flag = args.is_present("color");
+    let ignore_case_flag = args.is_present("ignore_case");
 
     let flags = Flags {
         count: count_flag,
         line_number: line_number_flag,
         colorize: color_flag,
+        ignore_case: ignore_case_flag,
     };
 
-    let re = Regex::new(pattern).unwrap();
+    let built_regex = match ignore_case_flag {
+        // if -i flag was supplied, set the value for the case insensitive (i) flag
+        true => RegexBuilder::new(&pattern).case_insensitive(true).build(),
+        // otherwise, build the Regex normally
+        _ => RegexBuilder::new(&pattern).build(),
+    };
+
+    // built_regex is a Result type 
+    let re = built_regex.unwrap();
 
     // if `input` argument was not given then take input from STDIN
     if input == "STDIN" {

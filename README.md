@@ -11,6 +11,8 @@ FLAGS:
         --color          Highlight the matched terms on every line with red color.
     -c, --count          Supress normal output and instead print number of matching lines.
     -h, --help           Prints help information
+	-i, --ignore-case    Ignore case distinctions in patterns and input data, so that characters that differ only in
+                         case match each other.
     -n, --line-number    Prefix each line of output with the 1-based line number within its input file.
     -V, --version        Prints version information
 
