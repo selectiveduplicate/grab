@@ -15,6 +15,7 @@ use crate::lib::{choose_process, Flags};
 fn main() {
     let args = App::new("grab")
         .version("0.1")
+        .author("Abu Sakib <mabusakib@gmail.com>")
         .about("Searches for patterns. Prints lines that match those patterns to the standard output.")
         .arg(
             Arg::with_name("pattern")
@@ -30,7 +31,7 @@ fn main() {
         )
         .arg(
             Arg::with_name("count")
-                .help("Supress normal output and instead print number of matching lines")
+                .help("Supresses normal output and instead prints number of matching lines")
                 .short("c")
                 .long("count")
                 .takes_value(false)
@@ -38,7 +39,7 @@ fn main() {
         )
         .arg(
             Arg::with_name("line_number")
-            .help("Prefix each line of output with the 1-based line number within its input file")
+            .help("Prefixes each line of output with the 1-based line number within its input file")
             .short("n")
             .long("line-number")
             .takes_value(false)
@@ -46,14 +47,14 @@ fn main() {
         )
         .arg(
             Arg::with_name("color")
-            .help("Highlight the matched terms on every line with red color")
+            .help("Highlights the matched terms on every line with red color")
             .long("color")
             .takes_value(false)
             .required(false)
         )
         .arg(
             Arg::with_name("ignore_case")
-            .help("Ignore case distinctions (uppercase and lowercase) in patterns and input data, so that characters that differ only in case match each other")
+            .help("Ignores case distinctions (uppercase and lowercase) in patterns and input data, so that characters that differ only in case match each other")
             .long("ignore-case")
             .short("i")
             .takes_value(false)
