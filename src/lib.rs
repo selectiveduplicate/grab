@@ -12,6 +12,7 @@ use std::io::prelude::*;
 /// --color
 /// --ignore-case, -i
 /// --after-context, -A,
+/// --before-context, -B,
 /// ```
 pub struct Flags {
     pub count: bool,
@@ -19,6 +20,7 @@ pub struct Flags {
     pub colorize: bool,
     pub ignore_case: bool,
     pub after_context: bool,
+    pub before_context: bool,
 }
 
 /// Calculates the number of matches found according to the regex pattern and returns it
@@ -33,6 +35,8 @@ fn count_matches<T: BufRead + Sized>(reader: T, re: Regex) -> u32 {
     }
     matches
 }
+
+// TODO: Allow users to specify a custom separator of choice for the next two functions.
 
 /// Prints trailing context lines with or without line numbers.
 /// Each match and its trailing context is separated by the "---" string.
@@ -90,11 +94,78 @@ fn print_with_after_context<T: BufRead + Sized>(
 
     // Prints matches with context lines.
     // Each group is separated by a hardcoded "---" string.
-    // TODO: Allow user to specify a custom separator of choice.
     for (matched_line, is_last, is_first) in matched_lines_with_number
         .iter()
         .enumerate()
-        .map(|(index, m)| (m, index == matched_lines_with_number.len() - 1, index == 0))
+        .map(|(index, m)| (m, index == matched_lines_with_number.len(), index == 0))
+    {
+        match (is_last, is_first) {
+            (true, _) => (),
+            (_, true) => (),
+            _ => println!("---"),
+        }
+        for (i, line) in matched_line.iter() {
+            match flags.line_number {
+                true => println!("{}: {}", i + 1, line),
+                _ => println!("{}", line),
+            }
+        }
+    }
+}
+
+/// Prints leading context lines with or without line numbers.
+/// Each match and its trailing context is separated by the "---" string.
+fn print_with_before_context<T: BufRead + Sized>(
+    reader: &mut T,
+    re: Regex,
+    flags: &Flags,
+    context_number: usize,
+) {
+    let mut patterns: Vec<String> = Vec::new();
+
+    let mut lines: Vec<String> = Vec::new();
+    for line_ in reader.lines() {
+        let line = line_.unwrap();
+        lines.push(line);
+    }
+
+    let mut matched_line_numbers: Vec<usize> = Vec::with_capacity(lines.len());
+    let mut matched_lines_with_number: Vec<Vec<(usize, String)>> = Vec::with_capacity(lines.len());
+
+    for (i, line_) in lines.iter().enumerate() {
+        match re.find(&line_) {
+            Some(pattern) => patterns.push(pattern.as_str().to_string()),
+            None => continue,
+        }
+
+        matched_line_numbers.push(i);
+        let v = Vec::with_capacity(context_number + 1);
+        matched_lines_with_number.push(v);
+    }
+
+    for (j, matched_number) in matched_line_numbers.iter().enumerate() {
+        for (i, line) in lines.iter().enumerate() {
+            // starting point is always positive
+            // this handles the case where a match exists on the first line
+            let starting_point = matched_number.saturating_sub(context_number);
+            if (i >= starting_point) && (i <= *matched_number) {
+                match ((i == *matched_number), flags.colorize) {
+                    (true, true) => matched_lines_with_number[j].push((
+                        i,
+                        re.replace_all(&line, colorize_pattern(&patterns[j]))
+                            .to_string(),
+                    )),
+                    (true, _) => matched_lines_with_number[j].push((i, line.clone())),
+                    _ => matched_lines_with_number[j].push((i, line.clone())),
+                }
+            }
+        }
+    }
+
+    for (matched_line, is_last, is_first) in matched_lines_with_number
+        .iter()
+        .enumerate()
+        .map(|(index, m)| (m, index == matched_lines_with_number.len(), index == 0))
     {
         match (is_last, is_first) {
             (true, _) => (),
@@ -118,15 +189,22 @@ pub fn choose_process<T: BufRead + Sized>(
     re: Regex,
     flags: &Flags,
     after_context_number: &str,
+    before_context_number: &str,
 ) {
-    match (flags.count, flags.after_context) {
-        (true, _) => println!("{}", count_matches(reader, re)),
-        (false, false) => print_matches(reader, re, flags),
-        (false, true) => print_with_after_context(
+    match (flags.count, flags.after_context, flags.before_context) {
+        (true, _, _) => println!("{}", count_matches(reader, re)),
+        (false, false, false) => print_matches(reader, re, flags),
+        (false, true, _) => print_with_after_context(
             &mut reader,
             re,
             flags,
             after_context_number.parse::<usize>().unwrap(),
+        ),
+        (false, false, true) => print_with_before_context(
+            &mut reader,
+            re,
+            flags,
+            before_context_number.parse::<usize>().unwrap(),
         ),
     }
 }

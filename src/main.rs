@@ -68,18 +68,28 @@ fn main() {
             .value_name("NUM")
             .takes_value(true)
             .required(false)
+        ).arg(
+            Arg::with_name("before_context")
+            .help("Prints NUM lines of leading context before the matching lines. Each group of match and its context is separated by a '---' string.")
+            .long("before-context")
+            .short("B")
+            .value_name("NUM")
+            .takes_value(true)
+            .required(false)
         )
         .get_matches();
 
     let pattern = args.value_of("pattern").unwrap();
     let input = args.value_of("input").unwrap_or("STDIN");
     let after_context_number = args.value_of("after_context").unwrap_or("NO_CONTEXT");
+    let before_context_number = args.value_of("before_context").unwrap_or("NO_CONTEXT");
 
     let count_flag = args.is_present("count");
     let line_number_flag = args.is_present("line_number");
     let color_flag = args.is_present("color");
     let ignore_case_flag = args.is_present("ignore_case");
     let after_context_flag = args.is_present("after_context");
+    let before_context_flag = args.is_present("before_context");
 
     let flags = Flags {
         count: count_flag,
@@ -87,6 +97,7 @@ fn main() {
         colorize: color_flag,
         ignore_case: ignore_case_flag,
         after_context: after_context_flag,
+        before_context: before_context_flag,
     };
 
     let built_regex = match ignore_case_flag {
@@ -102,10 +113,22 @@ fn main() {
     if input == "STDIN" {
         let stdin = io::stdin();
         let reader = stdin.lock();
-        choose_process(reader, re, &flags, after_context_number);
+        choose_process(
+            reader,
+            re,
+            &flags,
+            after_context_number,
+            before_context_number,
+        );
     } else {
         let input_file = File::open(input).unwrap();
         let reader = BufReader::new(input_file);
-        choose_process(reader, re, &flags, after_context_number);
+        choose_process(
+            reader,
+            re,
+            &flags,
+            after_context_number,
+            before_context_number,
+        );
     }
 }
