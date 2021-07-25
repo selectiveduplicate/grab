@@ -1,27 +1,8 @@
-//! Searches for patterns. Prints to the standard output after successful match.
 use colored::Colorize;
 use regex::Regex;
 use std::io::prelude::*;
 
-/// Struct representting the argument flags.
-///
-/// # Respective flags represented by the fields:
-/// ```
-/// --count, -c
-/// --line-number, -n
-/// --color
-/// --ignore-case, -i
-/// --after-context, -A,
-/// --before-context, -B,
-/// ```
-pub struct Flags {
-    pub count: bool,
-    pub line_number: bool,
-    pub colorize: bool,
-    pub ignore_case: bool,
-    pub after_context: bool,
-    pub before_context: bool,
-}
+use crate::lib::flag::Flags;
 
 /// Calculates the number of matches found according to the regex pattern and returns it
 fn count_matches<T: BufRead + Sized>(reader: T, re: Regex) -> u32 {
