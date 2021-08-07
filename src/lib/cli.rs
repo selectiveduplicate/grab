@@ -77,7 +77,7 @@ impl<'cli, 'a> Cli<'cli, 'a> {
     }
 
     ///Parses all the command-line arguments
-    pub fn parse(&self) -> ArgMatches {
-        self.app.clone().get_matches()
+    pub fn parse(self) -> ArgMatches<'cli> {
+        self.app.get_matches()
     }
 }
