@@ -224,3 +224,21 @@ fn print_matches<T: BufRead + Sized>(reader: T, re: Regex, flags: &Flags) {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs::File;
+    use std::io::BufReader;
+
+    #[test]
+    fn test_count_matches() {
+        let regex_pattern = regex::Regex::new("like").unwrap();
+        let input_file_path = "./src/data/pessoa.txt";
+        let input_file = File::open(input_file_path).unwrap();
+        let reader = BufReader::new(input_file);
+
+        let number_of_matches = count_matches(reader,regex_pattern);
+        assert_eq!(number_of_matches, 5);
+    }
+}
