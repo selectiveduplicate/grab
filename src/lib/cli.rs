@@ -73,7 +73,7 @@ impl<'cli, 'a> Cli<'cli, 'a> {
             .required(false)
         );
 
-        Self { app: app.clone() }
+        Self { app }
     }
 
     ///Parses all the command-line arguments
