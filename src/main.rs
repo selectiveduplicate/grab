@@ -17,6 +17,7 @@ fn main() {
     let input = args.value_of("input").unwrap_or("STDIN");
     let after_context_number = args.value_of("after_context").unwrap_or("NO_CONTEXT");
     let before_context_number = args.value_of("before_context").unwrap_or("NO_CONTEXT");
+    let group_separator = args.value_of("group_separator").unwrap_or("---");
 
     let flags = Flags::set_flags(&args);
 
@@ -39,6 +40,7 @@ fn main() {
             &flags,
             after_context_number,
             before_context_number,
+            group_separator,
         );
     } else {
         let input_file = File::open(input).unwrap();
@@ -49,6 +51,7 @@ fn main() {
             &flags,
             after_context_number,
             before_context_number,
+            group_separator,
         );
     }
 }

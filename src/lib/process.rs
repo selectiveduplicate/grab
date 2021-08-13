@@ -17,8 +17,6 @@ fn count_matches<T: BufRead + Sized>(reader: T, re: Regex) -> u32 {
     matches
 }
 
-// TODO: Allow users to specify a custom separator of choice for the next two functions.
-
 /// Prints trailing context lines with or without line numbers.
 /// Each match and its trailing context is separated by the "---" string.
 fn print_with_after_context<T: BufRead + Sized>(
@@ -26,6 +24,7 @@ fn print_with_after_context<T: BufRead + Sized>(
     re: Regex,
     flags: &Flags,
     context_number: usize,
+    group_separator: &str,
 ) {
     // For all the matched words/terms
     let mut patterns: Vec<String> = Vec::new();
@@ -83,7 +82,7 @@ fn print_with_after_context<T: BufRead + Sized>(
         match (is_last, is_first) {
             (true, _) => (),
             (_, true) => (),
-            _ => println!("---"),
+            _ => println!("{}", group_separator)
         }
         for (i, line) in matched_line.iter() {
             match flags.line_number {
@@ -101,6 +100,7 @@ fn print_with_before_context<T: BufRead + Sized>(
     re: Regex,
     flags: &Flags,
     context_number: usize,
+    group_separator: &str,
 ) {
     let mut patterns: Vec<String> = Vec::new();
 
@@ -151,7 +151,7 @@ fn print_with_before_context<T: BufRead + Sized>(
         match (is_last, is_first) {
             (true, _) => (),
             (_, true) => (),
-            _ => println!("---"),
+            _ => println!("{}", group_separator),
         }
         for (i, line) in matched_line.iter() {
             match flags.line_number {
@@ -171,6 +171,7 @@ pub fn choose_process<T: BufRead + Sized>(
     flags: &Flags,
     after_context_number: &str,
     before_context_number: &str,
+    group_separator: &str,
 ) {
     match (flags.count, flags.after_context, flags.before_context) {
         (true, _, _) => println!("{}", count_matches(reader, re)),
@@ -180,12 +181,14 @@ pub fn choose_process<T: BufRead + Sized>(
             re,
             flags,
             after_context_number.parse::<usize>().unwrap(),
+            group_separator,
         ),
         (false, false, true) => print_with_before_context(
             &mut reader,
             re,
             flags,
             before_context_number.parse::<usize>().unwrap(),
+            group_separator
         ),
     }
 }

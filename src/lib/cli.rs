@@ -57,7 +57,7 @@ impl<'cli, 'a> Cli<'cli, 'a> {
         )
         .arg(
             Arg::with_name("after_context")
-            .help("Prints NUM lines of trailing context after the matching lines. Each group of match and its context is separated by a '---' string.")
+            .help("Prints NUM lines of trailing context after the matching lines. Each group of match and its context is separated by a separator as described by the --group-separator option")
             .long("after-context")
             .short("A")
             .value_name("NUM")
@@ -65,10 +65,17 @@ impl<'cli, 'a> Cli<'cli, 'a> {
             .required(false)
         ).arg(
             Arg::with_name("before_context")
-            .help("Prints NUM lines of leading context before the matching lines. Each group of match and its context is separated by a '---' string.")
+            .help("Prints NUM lines of leading context before the matching lines. Each group of match and its context is separated by a separator as described by the --group-separator option")
             .long("before-context")
             .short("B")
             .value_name("NUM")
+            .takes_value(true)
+            .required(false)
+        ).arg(
+            Arg::with_name("group_separator")
+            .help("Use SEP as a group separator. By default SEP is a triple hyphen (---)")
+            .long("group-separator")
+            .value_name("SEP")
             .takes_value(true)
             .required(false)
         );
