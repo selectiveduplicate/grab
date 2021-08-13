@@ -9,7 +9,7 @@ impl<'cli, 'a> Cli<'cli, 'a> {
     ///Returns a new `clap::App` instance
     pub fn new() -> Self {
         let app = App::new("grab")
-        .version("0.1")
+        .version("1.0")
         .author("Abu Sakib <mabusakib@gmail.com>")
         .about("Searches for patterns. Prints lines that match those patterns to the standard output.")
         .arg(
