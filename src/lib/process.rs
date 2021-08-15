@@ -42,7 +42,7 @@ fn print_with_after_context<T: BufRead + Sized>(
     let mut matched_lines_with_number: Vec<Vec<(usize, String)>> = Vec::with_capacity(lines.len());
 
     for (i, line_) in lines.iter().enumerate() {
-        match re.find(&line_) {
+        match re.find(line_) {
             Some(pattern) => patterns.push(pattern.as_str().to_string()),
             None => continue,
         }
@@ -61,7 +61,7 @@ fn print_with_after_context<T: BufRead + Sized>(
                 match ((i == *matched_number), flags.colorize) {
                     (true, true) => matched_lines_with_number[j].push((
                         i,
-                        re.replace_all(&line, colorize_pattern(&patterns[j]))
+                        re.replace_all(line, colorize_pattern(&patterns[j]))
                             .to_string(),
                     )),
                     (true, _) => matched_lines_with_number[j].push((i, line.clone())),
@@ -113,7 +113,7 @@ fn print_with_before_context<T: BufRead + Sized>(
     let mut matched_lines_with_number: Vec<Vec<(usize, String)>> = Vec::with_capacity(lines.len());
 
     for (i, line_) in lines.iter().enumerate() {
-        match re.find(&line_) {
+        match re.find(line_) {
             Some(pattern) => patterns.push(pattern.as_str().to_string()),
             None => continue,
         }
@@ -132,7 +132,7 @@ fn print_with_before_context<T: BufRead + Sized>(
                 match ((i == *matched_number), flags.colorize) {
                     (true, true) => matched_lines_with_number[j].push((
                         i,
-                        re.replace_all(&line, colorize_pattern(&patterns[j]))
+                        re.replace_all(line, colorize_pattern(&patterns[j]))
                             .to_string(),
                     )),
                     (true, _) => matched_lines_with_number[j].push((i, line.clone())),

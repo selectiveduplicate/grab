@@ -23,9 +23,9 @@ fn main() {
 
     let built_regex = match flags.ignore_case {
         // if -i flag was supplied, set the value for the case insensitive (i) flag
-        true => RegexBuilder::new(&pattern).case_insensitive(true).build(),
+        true => RegexBuilder::new(pattern).case_insensitive(true).build(),
         // otherwise, build the Regex normally
-        _ => RegexBuilder::new(&pattern).build(),
+        _ => RegexBuilder::new(pattern).build(),
     };
 
     let re = built_regex.unwrap();
