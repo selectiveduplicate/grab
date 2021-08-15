@@ -9,7 +9,7 @@ fn count_matches<T: BufRead + Sized>(reader: T, re: Regex) -> u32 {
     let mut matches: u32 = 0;
     for line_ in reader.lines() {
         let line = line_.unwrap();
-        if let Some(_) = re.find(&line) {
+        if re.find(&line).is_some() {
             matches += 1
         }
     }
