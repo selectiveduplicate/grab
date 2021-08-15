@@ -9,9 +9,8 @@ fn count_matches<T: BufRead + Sized>(reader: T, re: Regex) -> u32 {
     let mut matches: u32 = 0;
     for line_ in reader.lines() {
         let line = line_.unwrap();
-        match re.find(&line) {
-            Some(_) => matches += 1,
-            _ => (),
+        if let Some(_) = re.find(&line) {
+            matches += 1
         }
     }
     matches
@@ -82,7 +81,7 @@ fn print_with_after_context<T: BufRead + Sized>(
         match (is_last, is_first) {
             (true, _) => (),
             (_, true) => (),
-            _ => println!("{}", group_separator)
+            _ => println!("{}", group_separator),
         }
         for (i, line) in matched_line.iter() {
             match flags.line_number {
@@ -188,7 +187,7 @@ pub fn choose_process<T: BufRead + Sized>(
             re,
             flags,
             before_context_number.parse::<usize>().unwrap(),
-            group_separator
+            group_separator,
         ),
     }
 }
@@ -241,7 +240,7 @@ mod tests {
         let input_file = File::open(input_file_path).unwrap();
         let reader = BufReader::new(input_file);
 
-        let number_of_matches = count_matches(reader,regex_pattern);
+        let number_of_matches = count_matches(reader, regex_pattern);
         assert_eq!(number_of_matches, 5);
     }
 }
