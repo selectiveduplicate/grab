@@ -81,7 +81,7 @@ fn print_with_after_context<T: BufRead + Sized>(
         match (is_last, is_first) {
             (true, _) => (),
             (_, true) => (),
-            _ => println!("{}", group_separator),
+            _ => println!("{}", group_separator.green()),
         }
         for (i, line) in matched_line.iter() {
             match flags.line_number {
@@ -150,7 +150,7 @@ fn print_with_before_context<T: BufRead + Sized>(
         match (is_last, is_first) {
             (true, _) => (),
             (_, true) => (),
-            _ => println!("{}", group_separator),
+            _ => println!("{}", group_separator.green()),
         }
         for (i, line) in matched_line.iter() {
             match flags.line_number {
