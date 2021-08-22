@@ -17,7 +17,7 @@ fn count_matches<T: BufRead + Sized>(reader: T, re: Regex) -> u32 {
 }
 
 /// Prints trailing context lines with or without line numbers.
-/// Each match and its trailing context is separated by the "---" string.
+/// Each match and its trailing context is separated by `group_separator`.
 fn print_with_after_context<T: BufRead + Sized>(
     reader: &mut T,
     re: Regex,
@@ -72,7 +72,7 @@ fn print_with_after_context<T: BufRead + Sized>(
     }
 
     // Prints matches with context lines.
-    // Each group is separated by a hardcoded "---" string.
+    // Each group is separated by `group_separator`.
     for (matched_line, is_last, is_first) in matched_lines_with_number
         .iter()
         .enumerate()
@@ -93,7 +93,7 @@ fn print_with_after_context<T: BufRead + Sized>(
 }
 
 /// Prints leading context lines with or without line numbers.
-/// Each match and its trailing context is separated by the "---" string.
+/// Each match and its trailing context is separated by `group_separator`.
 fn print_with_before_context<T: BufRead + Sized>(
     reader: &mut T,
     re: Regex,
