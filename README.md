@@ -8,3 +8,18 @@ It builds up on the first project `grep-lite` presented in the book [Rust in Act
 
 # Usage
 To see available usages, run `grab --help`.
+
+# Features
+ - [x] `STDIN` mode
+ - [x] Colored matches
+ - [x] Number of matches
+ - [x] Case insensitive mode
+ - [x] Line numbers
+ - [x] Context lines
+	 - [x] Trailing context
+	 - [x] Leading context
+- [x]  Custom group separator
+	- [x] Colored separator
+
+# Wishlist
+- [ ] Pipe support
