@@ -22,4 +22,4 @@ To see available usages, run `grab --help`.
 	- [x] Colored separator
 
 # Wishlist
-- [ ] Pipe support
+- [ ] `--context` flag support like `grep`.
