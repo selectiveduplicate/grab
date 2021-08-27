@@ -17,7 +17,7 @@ fn count_matches<T: BufRead + Sized>(reader: T, re: Regex) -> u32 {
 }
 
 /// Prints trailing context lines with or without line numbers.
-/// Each match and its trailing context is separated by `group_separator`.
+/// Each group of match and its context is separated by `group_separator`.
 fn print_with_after_context<T: BufRead + Sized>(
     reader: &mut T,
     re: Regex,
@@ -93,7 +93,7 @@ fn print_with_after_context<T: BufRead + Sized>(
 }
 
 /// Prints leading context lines with or without line numbers.
-/// Each match and its trailing context is separated by `group_separator`.
+/// Each group of match and its context is separated by `group_separator`.
 fn print_with_before_context<T: BufRead + Sized>(
     reader: &mut T,
     re: Regex,
@@ -161,6 +161,76 @@ fn print_with_before_context<T: BufRead + Sized>(
     }
 }
 
+/// Prints leading and trailing context lines with or without line numbers.
+/// Each group of match and its context is separated by `group_separator`.
+fn print_with_context<T: BufRead + Sized>(
+    reader: &mut T,
+    re: Regex,
+    flags: &Flags,
+    context_number: usize,
+    group_separator: &str,
+) {
+    let mut patterns: Vec<String> = Vec::new();
+
+    let mut lines: Vec<String> = Vec::new();
+    for line_ in reader.lines() {
+        let line = line_.unwrap();
+        lines.push(line);
+    }
+
+    let mut matched_line_numbers: Vec<usize> = Vec::with_capacity(lines.len());
+    let mut matched_lines_with_number: Vec<Vec<(usize, String)>> = Vec::with_capacity(lines.len());
+
+    for (i, line_) in lines.iter().enumerate() {
+        match re.find(line_) {
+            Some(pattern) => patterns.push(pattern.as_str().to_string()),
+            None => continue,
+        }
+
+        matched_line_numbers.push(i);
+        let v = Vec::with_capacity(context_number + 1);
+        matched_lines_with_number.push(v);
+    }
+
+    for (j, matched_number) in matched_line_numbers.iter().enumerate() {
+        for (i, line) in lines.iter().enumerate() {
+            // Upper and lower bounds of leading and trailing contxt lines
+            // respectively, for each matching line
+            let lower_bound = matched_number.saturating_sub(context_number);
+            let upper_bound = matched_number + context_number;
+            if (i >= lower_bound) && (i <= upper_bound) {
+                match ((i == *matched_number), flags.colorize) {
+                    (true, true) => matched_lines_with_number[j].push((
+                        i,
+                        re.replace_all(line, colorize_pattern(&patterns[j]))
+                            .to_string(),
+                    )),
+                    (true, _) => matched_lines_with_number[j].push((i, line.clone())),
+                    _ => matched_lines_with_number[j].push((i, line.clone())),
+                }
+            }
+        }
+    }
+
+    for (matched_line, is_last, is_first) in matched_lines_with_number
+        .iter()
+        .enumerate()
+        .map(|(index, m)| (m, index == matched_lines_with_number.len(), index == 0))
+    {
+        match (is_last, is_first) {
+            (true, _) => (),
+            (_, true) => (),
+            _ => println!("{}", group_separator.green()),
+        }
+        for (i, line) in matched_line.iter() {
+            match flags.line_number {
+                true => println!("{}: {}", i + 1, line),
+                _ => println!("{}", line),
+            }
+        }
+    }
+}
+
 /// Checks status of the `count` field in Flags struct.
 /// If it's set, then display number of matches returned by calling `count_matches`.
 /// Otherwise, call `print_matches`.
@@ -170,23 +240,36 @@ pub fn choose_process<T: BufRead + Sized>(
     flags: &Flags,
     after_context_number: &str,
     before_context_number: &str,
+    context: &str,
     group_separator: &str,
 ) {
-    match (flags.count, flags.after_context, flags.before_context) {
-        (true, _, _) => println!("{}", count_matches(reader, re)),
-        (false, false, false) => print_matches(reader, re, flags),
-        (false, true, _) => print_with_after_context(
+    match (
+        flags.count,
+        flags.after_context,
+        flags.before_context,
+        flags.context,
+    ) {
+        (true, _, _, _) => println!("{}", count_matches(reader, re)),
+        (false, false, false, false) => print_matches(reader, re, flags),
+        (false, true, _, _) => print_with_after_context(
             &mut reader,
             re,
             flags,
             after_context_number.parse::<usize>().unwrap(),
             group_separator,
         ),
-        (false, false, true) => print_with_before_context(
+        (false, false, true, _) => print_with_before_context(
             &mut reader,
             re,
             flags,
             before_context_number.parse::<usize>().unwrap(),
+            group_separator,
+        ),
+        (_, _, _, _) => print_with_context(
+            &mut reader,
+            re,
+            flags,
+            context.parse::<usize>().unwrap(),
             group_separator,
         ),
     }

@@ -72,6 +72,14 @@ impl<'cli, 'a> Cli<'cli, 'a> {
             .takes_value(true)
             .required(false)
         ).arg(
+            Arg::with_name("context")
+            .help("Prints NUM lines of context lines before and after the matching lines. Each group of match and its context is separated by a separator as described by the --group-separator option")
+            .long("context")
+            .short("C")
+            .value_name("NUM")
+            .takes_value(true)
+            .required(false)
+        ).arg(
             Arg::with_name("group_separator")
             .help("Use SEP as a group separator. By default SEP is a triple hyphen (---)")
             .long("group-separator")

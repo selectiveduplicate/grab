@@ -18,6 +18,7 @@ fn main() {
     let after_context_number = args.value_of("after_context").unwrap_or("NO_CONTEXT");
     let before_context_number = args.value_of("before_context").unwrap_or("NO_CONTEXT");
     let group_separator = args.value_of("group_separator").unwrap_or("---");
+    let context = args.value_of("context").unwrap_or("NO_CONTEXT");
 
     let flags = Flags::set_flags(&args);
 
@@ -40,6 +41,7 @@ fn main() {
             &flags,
             after_context_number,
             before_context_number,
+            context,
             group_separator,
         );
     } else {
@@ -51,6 +53,7 @@ fn main() {
             &flags,
             after_context_number,
             before_context_number,
+            context,
             group_separator,
         );
     }
