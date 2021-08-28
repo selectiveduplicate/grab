@@ -18,8 +18,7 @@ To see available usages, run `grab --help`.
  - [x] Context lines
 	 - [x] Trailing context
 	 - [x] Leading context
+	 - [x] Both trailing and leading context
 - [x]  Custom group separator
 	- [x] Colored separator
 
-# Wishlist
-- [ ] `--context` flag support like `grep`.
