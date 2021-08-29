@@ -251,27 +251,38 @@ pub fn choose_process<T: BufRead + Sized>(
     ) {
         (true, _, _, _) => println!("{}", count_matches(reader, re)),
         (false, false, false, false) => print_matches(reader, re, flags),
-        (false, true, _, _) => print_with_after_context(
-            &mut reader,
-            re,
-            flags,
-            after_context_number.parse::<usize>().unwrap(),
-            group_separator,
-        ),
-        (false, false, true, _) => print_with_before_context(
-            &mut reader,
-            re,
-            flags,
-            before_context_number.parse::<usize>().unwrap(),
-            group_separator,
-        ),
-        (_, _, _, _) => print_with_context(
-            &mut reader,
-            re,
-            flags,
-            context.parse::<usize>().unwrap(),
-            group_separator,
-        ),
+        (false, true, _, _) => match after_context_number.parse::<usize>() {
+            Ok(context) => {
+                print_with_after_context(&mut reader, re, flags, context, group_separator)
+            }
+            // Exit with explicit error if context length isn't a valid integer
+            Err(_) => {
+                eprintln!("Invalid context length argument: must be an integer.");
+                std::process::exit(1);
+            }
+        },
+        (false, false, true, _) => {
+            match before_context_number.parse::<usize>() {
+                Ok(context) => {
+                    print_with_before_context(&mut reader, re, flags, context, group_separator)
+                }
+                // Exit with explicit error if context length isn't a valid integer
+                Err(_) => {
+                    eprintln!("Invalid context length argument: must be an integer.");
+                    std::process::exit(1);
+                }
+            }
+        }
+        (_, _, _, _) => {
+            match context.parse::<usize>() {
+                Ok(context) => print_with_context(&mut reader, re, flags, context, group_separator),
+                // Exit with explicit error if context length isn't a valid integer
+                Err(_) => {
+                    eprintln!("Invalid context length argument: must be an integer.");
+                    std::process::exit(1);
+                }
+            }
+        }
     }
 }
 
