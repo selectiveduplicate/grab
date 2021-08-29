@@ -30,12 +30,7 @@ fn print_with_after_context<T: BufRead + Sized>(
 
     // We need to iterate over the `reader` content twice, which is not possible so
     // we move them to a Vector that we can iterate over more than once.
-    let mut lines: Vec<String> = Vec::new();
-    for line_ in reader.lines() {
-        let line = line_.unwrap();
-        lines.push(line);
-    }
-
+    let lines: Vec<_> = reader.lines().map(|line| line.unwrap()).collect();
     // For line numbers where matches occur
     let mut matched_line_numbers: Vec<usize> = Vec::with_capacity(lines.len());
     // Stores each matching line and line number as a tuple Vector
