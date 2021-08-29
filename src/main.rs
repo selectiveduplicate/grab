@@ -9,7 +9,7 @@ use lib::cli::Cli;
 use lib::flag::Flags;
 use lib::process::choose_process;
 
-fn main() {
+fn main() -> std::io::Result<()> {
     let app = Cli::new();
     let args = app.parse();
 
@@ -45,7 +45,14 @@ fn main() {
             group_separator,
         );
     } else {
-        let input_file = File::open(input).unwrap();
+        let input_file = match File::open(input) {
+            Ok(file) => file,
+            // Exit with explicit error for invalid file
+            Err(error) => {
+                eprintln!("Error: {}", error);
+                std::process::exit(1);
+            }
+        };
         let reader = BufReader::new(input_file);
         choose_process(
             reader,
@@ -57,4 +64,5 @@ fn main() {
             group_separator,
         );
     }
+    Ok(())
 }
