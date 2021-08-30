@@ -9,7 +9,7 @@ use lib::cli::Cli;
 use lib::flag::Flags;
 use lib::process::choose_process;
 
-fn main() -> std::io::Result<()> {
+fn main() {
     let app = Cli::new();
     let args = app.parse();
 
@@ -64,5 +64,4 @@ fn main() -> std::io::Result<()> {
             group_separator,
         );
     }
-    Ok(())
 }
