@@ -56,6 +56,14 @@ impl<'cli, 'a> Cli<'cli, 'a> {
             .required(false)
         )
         .arg(
+            Arg::with_name("invert_match")
+            .help("Inverts the sense of matching, to select non-matching lines")
+            .long("invert-match")
+            .short("v")
+            .takes_value(false)
+            .required(false)
+        )
+        .arg(
             Arg::with_name("after_context")
             .help("Prints NUM lines of trailing context after the matching lines. Each group of match and its context is separated by a separator as described by the --group-separator option")
             .long("after-context")

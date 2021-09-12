@@ -13,6 +13,7 @@ To see available usages, run `grab --help`.
  - [x] `STDIN` mode
  - [x] Colored matches
  - [x] Number of matches
+ - [x] Invert matching
  - [x] Case insensitive mode
  - [x] Line numbers
  - [x] Context lines

@@ -1,18 +1,16 @@
 use colored::Colorize;
 use regex::Regex;
-use std::io::prelude::*;
+use std::io::BufRead;
 
 use crate::lib::flag::Flags;
 
 /// Calculates the number of matches found according to the regex pattern and returns it
 fn count_matches<T: BufRead + Sized>(reader: T, re: Regex) -> u32 {
     let mut matches: u32 = 0;
-    for line_ in reader.lines() {
-        let line = line_.unwrap();
-        if re.find(&line).is_some() {
-            matches += 1
-        }
-    }
+    reader.lines().for_each(|line| {
+        re.find(&line.unwrap()).is_some().then(|| matches += 1);
+    });
+
     matches
 }
 
@@ -98,11 +96,7 @@ fn print_with_before_context<T: BufRead + Sized>(
 ) {
     let mut patterns: Vec<String> = Vec::new();
 
-    let mut lines: Vec<String> = Vec::new();
-    for line_ in reader.lines() {
-        let line = line_.unwrap();
-        lines.push(line);
-    }
+    let lines: Vec<_> = reader.lines().map(|line| line.unwrap()).collect();
 
     let mut matched_line_numbers: Vec<usize> = Vec::with_capacity(lines.len());
     let mut matched_lines_with_number: Vec<Vec<(usize, String)>> = Vec::with_capacity(lines.len());
@@ -167,11 +161,7 @@ fn print_with_context<T: BufRead + Sized>(
 ) {
     let mut patterns: Vec<String> = Vec::new();
 
-    let mut lines: Vec<String> = Vec::new();
-    for line_ in reader.lines() {
-        let line = line_.unwrap();
-        lines.push(line);
-    }
+    let lines: Vec<_> = reader.lines().map(|line| line.unwrap()).collect();
 
     let mut matched_line_numbers: Vec<usize> = Vec::with_capacity(lines.len());
     let mut matched_lines_with_number: Vec<Vec<(usize, String)>> = Vec::with_capacity(lines.len());
@@ -243,10 +233,11 @@ pub fn choose_process<T: BufRead + Sized>(
         flags.after_context,
         flags.before_context,
         flags.context,
+        flags.invert_match,
     ) {
-        (true, _, _, _) => println!("{}", count_matches(reader, re)),
-        (false, false, false, false) => print_matches(reader, re, flags),
-        (false, true, _, _) => match after_context_number.parse::<usize>() {
+        (true, _, _, _, _) => println!("{}", count_matches(reader, re)),
+        (false, false, false, false, false) => print_matches(reader, re, flags),
+        (false, true, _, _, _) => match after_context_number.parse::<usize>() {
             Ok(context) => {
                 print_with_after_context(&mut reader, re, flags, context, group_separator)
             }
@@ -256,7 +247,7 @@ pub fn choose_process<T: BufRead + Sized>(
                 std::process::exit(1);
             }
         },
-        (false, false, true, _) => {
+        (false, false, true, _, _) => {
             match before_context_number.parse::<usize>() {
                 Ok(context) => {
                     print_with_before_context(&mut reader, re, flags, context, group_separator)
@@ -268,7 +259,7 @@ pub fn choose_process<T: BufRead + Sized>(
                 }
             }
         }
-        (_, _, _, _) => {
+        (_, _, _, true, _) => {
             match context.parse::<usize>() {
                 Ok(context) => print_with_context(&mut reader, re, flags, context, group_separator),
                 // Exit with explicit error if context length isn't a valid integer
@@ -278,6 +269,7 @@ pub fn choose_process<T: BufRead + Sized>(
                 }
             }
         }
+        (_, _, _, _, true) => print_invert_matches(reader, re, flags),
     }
 }
 
@@ -311,6 +303,23 @@ fn print_matches<T: BufRead + Sized>(reader: T, re: Regex, flags: &Flags) {
                 i + 1,
                 re.replace_all(&line, colorize_pattern(pattern))
             ),
+            _ => println!("{}", line),
+        }
+    }
+}
+
+/// Prints the lines that doesn't contain the pattern.
+/// Based on the status of the `line_number` field of Flag struct,
+/// also prints the 1-based line number preceeding each line.
+fn print_invert_matches<T: BufRead + Sized>(reader: T, re: Regex, flags: &Flags) {
+    let mut lines = reader.lines().enumerate();
+    while let Some((i, Ok(line))) = lines.next() {
+        // don't do anything if match is found
+        if re.find(&line).is_some() {
+            continue;
+        };
+        match flags.line_number {
+            true => println!("{}: {}", i + 1, line),
             _ => println!("{}", line),
         }
     }
