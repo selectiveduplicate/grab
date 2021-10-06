@@ -1,6 +1,6 @@
 use colored::Colorize;
 use regex::Regex;
-use std::io::{BufRead, Write};
+use std::io::BufRead;
 
 use crate::lib::flag::Flags;
 
@@ -22,7 +22,7 @@ fn print_with_after_context<T: BufRead + Sized>(
     flags: &Flags,
     context_number: usize,
     group_separator: &str,
-) -> Result<(), std::io::Error> {
+) {
     // For all the matched words/terms
     let mut patterns: Vec<String> = Vec::new();
 
@@ -63,9 +63,7 @@ fn print_with_after_context<T: BufRead + Sized>(
             }
         }
     }
-    let stdout = std::io::stdout();
-    let handle = stdout.lock();
-    let mut writer = std::io::BufWriter::new(handle);
+
     // Prints matches with context lines.
     // Each group is separated by `group_separator`.
     for (matched_line, is_last, is_first) in matched_lines_with_number
@@ -76,17 +74,15 @@ fn print_with_after_context<T: BufRead + Sized>(
         match (is_last, is_first) {
             (true, _) => (),
             (_, true) => (),
-            _ => writeln!(writer, "{}", group_separator.green())?,
+            _ => println!("{}", group_separator.green()),
         }
         for (i, line) in matched_line.iter() {
             match flags.line_number {
-                true => writeln!(writer, "{}: {}", i + 1, line)?,
-                _ => writeln!(writer, "{}", line)?,
+                true => println!("{}: {}", i + 1, line),
+                _ => println!("{}", line),
             }
         }
     }
-    writer.flush()?;
-    Ok(())
 }
 
 /// Prints leading context lines with or without line numbers.
@@ -97,7 +93,7 @@ fn print_with_before_context<T: BufRead + Sized>(
     flags: &Flags,
     context_number: usize,
     group_separator: &str,
-) -> Result<(), std::io::Error> {
+) {
     let mut patterns: Vec<String> = Vec::new();
 
     let lines: Vec<_> = reader.lines().map(|line| line.unwrap()).collect();
@@ -135,9 +131,6 @@ fn print_with_before_context<T: BufRead + Sized>(
         }
     }
 
-    let stdout = std::io::stdout();
-    let handle = stdout.lock();
-    let mut writer = std::io::BufWriter::new(handle);
     for (matched_line, is_last, is_first) in matched_lines_with_number
         .iter()
         .enumerate()
@@ -146,17 +139,15 @@ fn print_with_before_context<T: BufRead + Sized>(
         match (is_last, is_first) {
             (true, _) => (),
             (_, true) => (),
-            _ => writeln!(writer, "{}", group_separator.green())?,
+            _ => println!("{}", group_separator.green()),
         }
         for (i, line) in matched_line.iter() {
             match flags.line_number {
-                true => writeln!(writer, "{}: {}", i + 1, line)?,
-                _ => writeln!(writer, "{}", line)?,
+                true => println!("{}: {}", i + 1, line),
+                _ => println!("{}", line),
             }
         }
     }
-    writer.flush()?;
-    Ok(())
 }
 
 /// Prints leading and trailing context lines with or without line numbers.
@@ -167,7 +158,7 @@ fn print_with_context<T: BufRead + Sized>(
     flags: &Flags,
     context_number: usize,
     group_separator: &str,
-) -> Result<(), std::io::Error> {
+) {
     let mut patterns: Vec<String> = Vec::new();
 
     let lines: Vec<_> = reader.lines().map(|line| line.unwrap()).collect();
@@ -206,11 +197,6 @@ fn print_with_context<T: BufRead + Sized>(
         }
     }
 
-    // Prepare stdout for printing to it
-    let stdout = std::io::stdout();
-    let handle = stdout.lock();
-    let mut writer = std::io::BufWriter::new(handle);
-
     for (matched_line, is_last, is_first) in matched_lines_with_number
         .iter()
         .enumerate()
@@ -219,17 +205,15 @@ fn print_with_context<T: BufRead + Sized>(
         match (is_last, is_first) {
             (true, _) => (),
             (_, true) => (),
-            _ => writeln!(writer, "{}", group_separator.green())?,
+            _ => println!("{}", group_separator.green()),
         }
         for (i, line) in matched_line.iter() {
             match flags.line_number {
-                true => writeln!(writer, "{}: {}", i + 1, line)?,
-                _ => writeln!(writer, "{}", line)?,
+                true => println!("{}: {}", i + 1, line),
+                _ => println!("{}", line),
             }
         }
     }
-    writer.flush()?;
-    Ok(())
 }
 
 /// Checks status of the `count` field in Flags struct.
@@ -243,7 +227,7 @@ pub fn choose_process<T: BufRead + Sized>(
     before_context_number: &str,
     context: &str,
     group_separator: &str,
-) -> Result<(), std::io::Error> {
+) {
     match (
         flags.count,
         flags.after_context,
@@ -251,10 +235,7 @@ pub fn choose_process<T: BufRead + Sized>(
         flags.context,
         flags.invert_match,
     ) {
-        (true, _, _, _, _) => {
-            println!("{}", count_matches(reader, re));
-            Ok(())
-        }
+        (true, _, _, _, _) => println!("{}", count_matches(reader, re)),
         (false, false, false, false, false) => print_matches(reader, re, flags),
         (false, true, _, _, _) => match after_context_number.parse::<usize>() {
             Ok(context) => {
@@ -299,19 +280,11 @@ fn colorize_pattern(pattern: &str) -> String {
 /// Prints the lines containing the matches found.
 /// Based on the status of the `line_number` field of Flag struct,
 /// also prints the 1-based line number preceeding each line.
-fn print_matches<T: BufRead + Sized>(
-    reader: T,
-    re: Regex,
-    flags: &Flags,
-) -> Result<(), std::io::Error> {
+fn print_matches<T: BufRead + Sized>(reader: T, re: Regex, flags: &Flags) {
     // `.lines()` returns an iterator over each line of `reader`, in the form of `io::Result::String`
     // So a line would be an instance like this: `Ok(line)`
     // `enumerate` gives us the (index, value) pair
     let mut lines = reader.lines().enumerate();
-    // Prepare stdout for printing to it
-    let stdout = std::io::stdout();
-    let handle = stdout.lock();
-    let mut writer = std::io::BufWriter::new(handle);
 
     // `.next()` on an iterator returns the item wrapped in an Option
     // So Each `Some` variant of that option will hold the (index, value) pair
@@ -323,50 +296,33 @@ fn print_matches<T: BufRead + Sized>(
             None => continue,
         };
         match (flags.line_number, flags.colorize) {
-            (true, false) => writeln!(writer, "{}: {}", i + 1, line)?,
-            (false, true) => writeln!(
-                writer,
-                "{}",
-                re.replace_all(&line, colorize_pattern(pattern))
-            )?,
-            (true, true) => writeln!(
-                writer,
+            (true, false) => println!("{}: {}", i + 1, line),
+            (false, true) => println!("{}", re.replace_all(&line, colorize_pattern(pattern))),
+            (true, true) => println!(
                 "{}: {}",
                 i + 1,
                 re.replace_all(&line, colorize_pattern(pattern))
-            )?,
-            _ => writeln!(writer, "{}", line)?,
+            ),
+            _ => println!("{}", line),
         }
     }
-    writer.flush()?;
-    Ok(())
 }
 
 /// Prints the lines that doesn't contain the pattern.
 /// Based on the status of the `line_number` field of Flag struct,
 /// also prints the 1-based line number preceeding each line.
-fn print_invert_matches<T: BufRead + Sized>(
-    reader: T,
-    re: Regex,
-    flags: &Flags,
-) -> Result<(), std::io::Error> {
+fn print_invert_matches<T: BufRead + Sized>(reader: T, re: Regex, flags: &Flags) {
     let mut lines = reader.lines().enumerate();
-    // Prepare stdout for printing to it
-    let stdout = std::io::stdout();
-    let handle = stdout.lock();
-    let mut writer = std::io::BufWriter::new(handle);
     while let Some((i, Ok(line))) = lines.next() {
         // don't do anything if match is found
         if re.find(&line).is_some() {
             continue;
         };
         match flags.line_number {
-            true => writeln!(writer, "{}: {}", i + 1, line)?,
-            _ => writeln!(writer, "{}", line)?,
+            true => println!("{}: {}", i + 1, line),
+            _ => println!("{}", line),
         }
     }
-    writer.flush()?;
-    Ok(())
 }
 
 #[cfg(test)]

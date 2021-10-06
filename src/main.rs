@@ -9,7 +9,7 @@ use lib::cli::Cli;
 use lib::flag::Flags;
 use lib::process::choose_process;
 
-fn main() -> Result<(), std::io::Error> {
+fn main() {
     let app = Cli::new();
     let args = app.parse();
 
@@ -43,7 +43,7 @@ fn main() -> Result<(), std::io::Error> {
             before_context_number,
             context,
             group_separator,
-        )?;
+        );
     } else {
         let input_file = match File::open(input) {
             Ok(file) => file,
@@ -62,7 +62,6 @@ fn main() -> Result<(), std::io::Error> {
             before_context_number,
             context,
             group_separator,
-        )?;
+        );
     }
-    Ok(())
 }
