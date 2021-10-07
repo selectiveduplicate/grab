@@ -9,7 +9,7 @@ use lib::cli::Cli;
 use lib::flag::Flags;
 use lib::process::choose_process;
 
-fn main() {
+fn main() -> Result<(), io::Error> {
     let app = Cli::new();
     let args = app.parse();
 
@@ -34,16 +34,19 @@ fn main() {
     // if `input` argument was not given then take input from STDIN
     if input == "STDIN" {
         let stdin = io::stdin();
-        let reader = stdin.lock();
-        choose_process(
-            reader,
-            re,
-            &flags,
-            after_context_number,
-            before_context_number,
-            context,
-            group_separator,
-        );
+        let mut buffer = String::new();
+        while stdin.read_line(&mut buffer).is_ok() {
+            choose_process(
+                buffer.as_bytes(),
+                re.clone(),
+                &flags,
+                after_context_number,
+                before_context_number,
+                context,
+                group_separator,
+            )?;
+            buffer.clear();
+        }
     } else {
         let input_file = match File::open(input) {
             Ok(file) => file,
@@ -62,6 +65,7 @@ fn main() {
             before_context_number,
             context,
             group_separator,
-        );
+        )?;
     }
+    Ok(())
 }
