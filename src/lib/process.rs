@@ -29,7 +29,7 @@ fn print_with_after_context<T: BufRead + Sized>(
 
     // We need to iterate over the `reader` content twice, which is not possible so
     // we move them to a Vector that we can iterate over more than once.
-    let lines: Vec<_> = reader.lines().map(|line| line.unwrap()).collect();
+    let lines = reader.lines().collect::<std::io::Result<Vec<String>>>()?;
     // For line numbers where matches occur
     let mut matched_line_numbers: Vec<usize> = Vec::with_capacity(lines.len());
     // Stores each matching line and line number as a tuple Vector
@@ -105,7 +105,7 @@ fn print_with_before_context<T: BufRead + Sized>(
 ) -> Result<(), std::io::Error> {
     let mut patterns: Vec<String> = Vec::new();
 
-    let lines: Vec<_> = reader.lines().map(|line| line.unwrap()).collect();
+    let lines = reader.lines().collect::<std::io::Result<Vec<String>>>()?;
 
     let mut matched_line_numbers: Vec<usize> = Vec::with_capacity(lines.len());
     let mut matched_lines_with_number: Vec<Vec<(usize, String)>> = Vec::with_capacity(lines.len());
@@ -175,7 +175,7 @@ fn print_with_context<T: BufRead + Sized>(
 ) -> Result<(), std::io::Error> {
     let mut patterns: Vec<String> = Vec::new();
 
-    let lines: Vec<_> = reader.lines().map(|line| line.unwrap()).collect();
+    let lines = reader.lines().collect::<std::io::Result<Vec<String>>>()?;
 
     let mut matched_line_numbers: Vec<usize> = Vec::with_capacity(lines.len());
     let mut matched_lines_with_number: Vec<Vec<(usize, String)>> = Vec::with_capacity(lines.len());
