@@ -3,6 +3,7 @@ use regex::Regex;
 use std::io::{BufRead, Write};
 
 use crate::lib::flag::Flags;
+use crate::lib::utils::Colors;
 
 /// Calculates the number of matches found according to the regex pattern and returns it
 fn count_matches<T: BufRead + Sized>(reader: T, re: Regex) -> u32 {
@@ -54,7 +55,7 @@ fn print_with_after_context<T: BufRead + Sized>(
                 match ((i == *matched_number), flags.colorize) {
                     (true, true) => matched_lines_with_number[j].push((
                         i,
-                        re.replace_all(line, colorize_pattern(&patterns[j]))
+                        re.replace_all(line, Colors::colorize_pattern(Colors::Red, &patterns[j]))
                             .to_string(),
                     )),
                     (true, _) => matched_lines_with_number[j].push((i, line.clone())),
@@ -76,7 +77,11 @@ fn print_with_after_context<T: BufRead + Sized>(
         match (is_last, is_first) {
             (true, _) => (),
             (_, true) => (),
-            _ => writeln!(writer, "{}", group_separator.green())?,
+            _ => writeln!(
+                writer,
+                "{}",
+                Colors::colorize_pattern(Colors::Green, group_separator)
+            )?,
         }
         for (i, line) in matched_line.iter() {
             match flags.line_number {
@@ -125,7 +130,7 @@ fn print_with_before_context<T: BufRead + Sized>(
                 match ((i == *matched_number), flags.colorize) {
                     (true, true) => matched_lines_with_number[j].push((
                         i,
-                        re.replace_all(line, colorize_pattern(&patterns[j]))
+                        re.replace_all(line, Colors::colorize_pattern(Colors::Red, &patterns[j]))
                             .to_string(),
                     )),
                     (true, _) => matched_lines_with_number[j].push((i, line.clone())),
@@ -196,7 +201,7 @@ fn print_with_context<T: BufRead + Sized>(
                 match ((i == *matched_number), flags.colorize) {
                     (true, true) => matched_lines_with_number[j].push((
                         i,
-                        re.replace_all(line, colorize_pattern(&patterns[j]))
+                        re.replace_all(line, Colors::colorize_pattern(Colors::Red, &patterns[j]))
                             .to_string(),
                     )),
                     (true, _) => matched_lines_with_number[j].push((i, line.clone())),
@@ -292,10 +297,6 @@ pub fn choose_process<T: BufRead + Sized>(
     }
 }
 
-fn colorize_pattern(pattern: &str) -> String {
-    pattern.red().to_string()
-}
-
 /// Prints the lines containing the matches found.
 /// Based on the status of the `line_number` field of Flag struct,
 /// also prints the 1-based line number preceeding each line.
@@ -327,13 +328,13 @@ fn print_matches<T: BufRead + Sized>(
             (false, true) => writeln!(
                 writer,
                 "{}",
-                re.replace_all(&line, colorize_pattern(pattern))
+                re.replace_all(&line, Colors::colorize_pattern(Colors::Red, pattern))
             )?,
             (true, true) => writeln!(
                 writer,
                 "{}: {}",
                 i + 1,
-                re.replace_all(&line, colorize_pattern(pattern))
+                re.replace_all(&line, Colors::colorize_pattern(Colors::Red, pattern))
             )?,
             _ => writeln!(writer, "{}", line)?,
         }
