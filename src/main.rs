@@ -2,6 +2,7 @@ use regex::RegexBuilder;
 use std::fs::File;
 use std::io;
 use std::io::BufReader;
+use std::path::Path;
 
 mod lib;
 
@@ -14,7 +15,7 @@ fn main() -> Result<(), io::Error> {
     let args = app.parse();
 
     let pattern = args.value_of("pattern").unwrap();
-    let input = args.value_of("input").unwrap_or("STDIN");
+    let input = Path::new(args.value_of("input").unwrap_or("STDIN"));
     let after_context_number = args.value_of("after_context").unwrap_or("NO_CONTEXT");
     let before_context_number = args.value_of("before_context").unwrap_or("NO_CONTEXT");
     let group_separator = args.value_of("group_separator").unwrap_or("---");
@@ -32,7 +33,7 @@ fn main() -> Result<(), io::Error> {
     let re = built_regex.unwrap();
 
     // if `input` argument was not given then take input from STDIN
-    if input == "STDIN" {
+    if input == Path::new("STDIN") {
         let stdin = io::stdin();
         let mut buffer = String::new();
         while stdin.read_line(&mut buffer).is_ok() {
