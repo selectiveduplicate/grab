@@ -260,7 +260,13 @@ pub fn choose_process<T: BufRead + Sized>(
             println!("{}", count_matches(reader, re));
             Ok(())
         }
-        (false, false, false, false, false) => print_matches(reader, re, flags),
+        (false, false, false, false, false) => {
+            let stdout = std::io::stdout();
+            let handle = stdout.lock();
+            let writer = std::io::BufWriter::new(handle);
+            print_matches(reader, re, flags, writer)?;
+            Ok(())
+        }
         (false, true, _, _, _) => match after_context_number.parse::<usize>() {
             Ok(context) => {
                 print_with_after_context(&mut reader, re, flags, context, group_separator)
@@ -304,15 +310,12 @@ fn print_matches<T: BufRead + Sized>(
     reader: T,
     re: Regex,
     flags: &Flags,
+    mut writer: impl Write,
 ) -> Result<(), std::io::Error> {
     // `.lines()` returns an iterator over each line of `reader`, in the form of `io::Result::String`
     // So a line would be an instance like this: `Ok(line)`
     // `enumerate` gives us the (index, value) pair
     let mut lines = reader.lines().enumerate();
-    // Prepare stdout for printing to it
-    let stdout = std::io::stdout();
-    let handle = stdout.lock();
-    let mut writer = std::io::BufWriter::new(handle);
 
     // `.next()` on an iterator returns the item wrapped in an Option
     // So Each `Some` variant of that option will hold the (index, value) pair
@@ -372,18 +375,70 @@ fn print_invert_matches<T: BufRead + Sized>(
 
 #[cfg(test)]
 mod tests {
+    use regex::RegexBuilder;
+
     use super::*;
+    use crate::Flags;
     use std::fs::File;
     use std::io::BufReader;
 
+    fn test_inputs(pattern: &str) -> (BufReader<File>, Regex, Vec<u8>) {
+        let writer = Vec::new();
+        let file = File::open("src/data/pessoa.txt").unwrap();
+        let reader = BufReader::new(file);
+        let regex = RegexBuilder::new(pattern).build().unwrap();
+
+        (reader, regex, writer)
+    }
+
     #[test]
     fn test_count_matches() {
-        let regex_pattern = regex::Regex::new("like").unwrap();
-        let input_file_path = "./src/data/pessoa.txt";
-        let input_file = File::open(input_file_path).unwrap();
-        let reader = BufReader::new(input_file);
-
-        let number_of_matches = count_matches(reader, regex_pattern);
+        let (reader, regex, _) = test_inputs("like");
+        let number_of_matches = count_matches(reader, regex);
         assert_eq!(number_of_matches, 5);
+    }
+
+    #[test]
+    fn test_print_matches_with_line_number() {
+        let flags = Flags {
+            count: false,
+            line_number: true,
+            colorize: false,
+            ignore_case: false,
+            invert_match: false,
+            after_context: false,
+            before_context: false,
+            context: false,
+        };
+        let (reader, regex, mut writer) = test_inputs("distress");
+        print_matches(reader, regex, &flags, &mut writer).unwrap();
+        assert_eq!(
+            writer,
+            "6: distresses me like a letter of farewell. I feel as if I’m always on the\n"
+                .as_bytes()
+                .to_vec()
+        );
+    }
+    
+    #[test]
+    fn test_print_matches_without_line_number() {
+        let flags = Flags {
+            count: false,
+            line_number: false,
+            colorize: false,
+            ignore_case: false,
+            invert_match: false,
+            after_context: false,
+            before_context: false,
+            context: false,
+        };
+        let (reader, regex, mut writer) = test_inputs("distress");
+        print_matches(reader, regex, &flags, &mut writer).unwrap();
+        assert_eq!(
+            writer,
+            "distresses me like a letter of farewell. I feel as if I’m always on the\n"
+                .as_bytes()
+                .to_vec()
+        );
     }
 }
