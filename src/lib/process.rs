@@ -244,9 +244,9 @@ pub fn choose_process<T: BufRead + Sized>(
     mut reader: T,
     re: Regex,
     flags: &Flags,
-    after_context_number: &str,
-    before_context_number: &str,
-    context: &str,
+    after_context_number: Option<&str>,
+    before_context_number: Option<&str>,
+    context: Option<&str>,
     group_separator: &str,
 ) -> Result<(), std::io::Error> {
     match (
@@ -267,7 +267,7 @@ pub fn choose_process<T: BufRead + Sized>(
             print_matches(reader, re, flags, writer)?;
             Ok(())
         }
-        (false, true, _, _, _) => match after_context_number.parse::<usize>() {
+        (false, true, _, _, _) => match after_context_number.unwrap().parse::<usize>() {
             Ok(context) => {
                 print_with_after_context(&mut reader, re, flags, context, group_separator)
             }
@@ -278,7 +278,7 @@ pub fn choose_process<T: BufRead + Sized>(
             }
         },
         (false, false, true, _, _) => {
-            match before_context_number.parse::<usize>() {
+            match before_context_number.unwrap().parse::<usize>() {
                 Ok(context) => {
                     print_with_before_context(&mut reader, re, flags, context, group_separator)
                 }
@@ -290,7 +290,7 @@ pub fn choose_process<T: BufRead + Sized>(
             }
         }
         (_, _, _, true, _) => {
-            match context.parse::<usize>() {
+            match context.unwrap().parse::<usize>() {
                 Ok(context) => print_with_context(&mut reader, re, flags, context, group_separator),
                 // Exit with explicit error if context length isn't a valid integer
                 Err(_) => {
@@ -419,7 +419,7 @@ mod tests {
                 .to_vec()
         );
     }
-    
+
     #[test]
     fn test_print_matches_without_line_number() {
         let flags = Flags {

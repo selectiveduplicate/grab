@@ -16,10 +16,10 @@ fn main() -> Result<(), io::Error> {
 
     let pattern = args.value_of("pattern").unwrap();
     let input = Path::new(args.value_of("input").unwrap_or("STDIN"));
-    let after_context_number = args.value_of("after_context").unwrap_or("NO_CONTEXT");
-    let before_context_number = args.value_of("before_context").unwrap_or("NO_CONTEXT");
+    let after_context_number = args.value_of("after_context");
+    let before_context_number = args.value_of("before_context");
     let group_separator = args.value_of("group_separator").unwrap_or("---");
-    let context = args.value_of("context").unwrap_or("NO_CONTEXT");
+    let context = args.value_of("context");
 
     let flags = Flags::set_flags(&args);
 
