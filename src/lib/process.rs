@@ -82,7 +82,7 @@ fn print_with_after_context<T: BufRead + Sized>(
             _ => writeln!(
                 writer,
                 "{}",
-                Colors::colorize_pattern(Colors::Green, group_separator)
+                Colors::colorize_pattern(Colors::Blue, group_separator)
             )?,
         }
         for (i, line) in matched_line.iter() {
@@ -158,7 +158,11 @@ fn print_with_before_context<T: BufRead + Sized>(
         match (is_last, is_first) {
             (true, _) => (),
             (_, true) => (),
-            _ => writeln!(writer, "{}", group_separator.green())?,
+            _ => writeln!(
+                writer,
+                "{}",
+                Colors::colorize_pattern(Colors::Blue, group_separator)
+            )?,
         }
         for (i, line) in matched_line.iter() {
             match flags.line_number {
@@ -236,7 +240,11 @@ fn print_with_context<T: BufRead + Sized>(
         match (is_last, is_first) {
             (true, _) => (),
             (_, true) => (),
-            _ => writeln!(writer, "{}", group_separator.green())?,
+            _ => writeln!(
+                writer,
+                "{}",
+                Colors::colorize_pattern(Colors::Blue, group_separator)
+            )?,
         }
         for (i, line) in matched_line.iter() {
             match flags.line_number {

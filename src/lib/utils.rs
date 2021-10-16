@@ -4,6 +4,7 @@ use colored::Colorize;
 pub enum Colors {
     Red,
     Green,
+    Blue,
 }
 
 impl Colors {
@@ -13,6 +14,7 @@ impl Colors {
         match color {
             Self::Red => pattern.red().to_string(),
             Self::Green => pattern.green().to_string(),
+            Self::Blue => pattern.blue().to_string(),
         }
     }
 }
