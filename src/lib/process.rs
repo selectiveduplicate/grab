@@ -1,4 +1,3 @@
-use colored::Colorize;
 use regex::Regex;
 use std::io::{BufRead, Write};
 
