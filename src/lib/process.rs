@@ -87,7 +87,12 @@ fn print_with_after_context<T: BufRead + Sized>(
         }
         for (i, line) in matched_line.iter() {
             match flags.line_number {
-                true => writeln!(writer, "{}: {}", i + 1, line)?,
+                true => writeln!(
+                    writer,
+                    "{}: {}",
+                    Colors::colorize_pattern(Colors::Green, &format!("{}", i + 1)),
+                    line
+                )?,
                 _ => writeln!(writer, "{}", line)?,
             }
         }
@@ -157,7 +162,12 @@ fn print_with_before_context<T: BufRead + Sized>(
         }
         for (i, line) in matched_line.iter() {
             match flags.line_number {
-                true => writeln!(writer, "{}: {}", i + 1, line)?,
+                true => writeln!(
+                    writer,
+                    "{}: {}",
+                    Colors::colorize_pattern(Colors::Green, &format!("{}", i + 1)),
+                    line
+                )?,
                 _ => writeln!(writer, "{}", line)?,
             }
         }
@@ -230,7 +240,12 @@ fn print_with_context<T: BufRead + Sized>(
         }
         for (i, line) in matched_line.iter() {
             match flags.line_number {
-                true => writeln!(writer, "{}: {}", i + 1, line)?,
+                true => writeln!(
+                    writer,
+                    "{}: {}",
+                    Colors::colorize_pattern(Colors::Green, &format!("{}", i + 1)),
+                    line
+                )?,
                 _ => writeln!(writer, "{}", line)?,
             }
         }
@@ -333,7 +348,12 @@ fn print_matches<T: BufRead + Sized>(
             None => continue,
         };
         match (flags.line_number, flags.colorize) {
-            (true, false) => writeln!(writer, "{}: {}", i + 1, line)?,
+            (true, false) => writeln!(
+                writer,
+                "{}: {}",
+                Colors::colorize_pattern(Colors::Green, &format!("{}", i + 1)),
+                line
+            )?,
             (false, true) => writeln!(
                 writer,
                 "{}",
@@ -342,7 +362,7 @@ fn print_matches<T: BufRead + Sized>(
             (true, true) => writeln!(
                 writer,
                 "{}: {}",
-                i + 1,
+                Colors::colorize_pattern(Colors::Green, &format!("{}", i + 1)),
                 re.replace_all(&line, Colors::colorize_pattern(Colors::Red, pattern))
             )?,
             _ => writeln!(writer, "{}", line)?,
@@ -371,7 +391,12 @@ fn print_invert_matches<T: BufRead + Sized>(
             continue;
         };
         match flags.line_number {
-            true => writeln!(writer, "{}: {}", i + 1, line)?,
+            true => writeln!(
+                writer,
+                "{}: {}",
+                Colors::colorize_pattern(Colors::Green, &format!("{}", i + 1)),
+                line
+            )?,
             _ => writeln!(writer, "{}", line)?,
         }
     }
@@ -420,7 +445,7 @@ mod tests {
         print_matches(reader, regex, &flags, &mut writer).unwrap();
         assert_eq!(
             writer,
-            "6: distresses me like a letter of farewell. I feel as if I’m always on the\n"
+            "\u{1b}[32m6\u{1b}[0m: distresses me like a letter of farewell. I feel as if I’m always on the\n"
                 .as_bytes()
                 .to_vec()
         );
@@ -489,10 +514,10 @@ reach somewhere. But there’s this heavy slumber that moves from one\n"
         print_with_after_context(reader, regex, &flags, 3, "####", &mut writer).unwrap();
         assert_eq!(
             writer,
-            "6: distresses me like a letter of farewell. I feel as if I’m always on the
-7: verge of waking up. I’m oppressed by the very self that encases me,
-8: asphyxiated by conclusions, and I’d gladly scream if my voice could
-9: reach somewhere. But there’s this heavy slumber that moves from one\n"
+            "\u{1b}[32m6\u{1b}[0m: distresses me like a letter of farewell. I feel as if I’m always on the
+\u{1b}[32m7\u{1b}[0m: verge of waking up. I’m oppressed by the very self that encases me,
+\u{1b}[32m8\u{1b}[0m: asphyxiated by conclusions, and I’d gladly scream if my voice could
+\u{1b}[32m9\u{1b}[0m: reach somewhere. But there’s this heavy slumber that moves from one\n"
                 .as_bytes()
                 .to_vec()
         );
