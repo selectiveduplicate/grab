@@ -18,11 +18,12 @@ fn count_matches<T: BufRead + Sized>(reader: T, re: Regex) -> u32 {
 /// Prints trailing context lines with or without line numbers.
 /// Each group of match and its context is separated by `group_separator`.
 fn print_with_after_context<T: BufRead + Sized>(
-    reader: &mut T,
+    reader: T,
     re: Regex,
     flags: &Flags,
     context_number: usize,
     group_separator: &str,
+    mut writer: impl Write,
 ) -> Result<(), std::io::Error> {
     // For all the matched words/terms
     let mut patterns: Vec<String> = Vec::new();
@@ -64,9 +65,10 @@ fn print_with_after_context<T: BufRead + Sized>(
             }
         }
     }
-    let stdout = std::io::stdout();
-    let handle = stdout.lock();
-    let mut writer = std::io::BufWriter::new(handle);
+    //let stdout = std::io::stdout();
+    //let handle = stdout.lock();
+    //let mut writer = std::io::BufWriter::new(handle);
+
     // Prints matches with context lines.
     // Each group is separated by `group_separator`.
     for (matched_line, is_last, is_first) in matched_lines_with_number
@@ -269,7 +271,11 @@ pub fn choose_process<T: BufRead + Sized>(
         }
         (false, true, _, _, _) => match after_context_number.unwrap().parse::<usize>() {
             Ok(context) => {
-                print_with_after_context(&mut reader, re, flags, context, group_separator)
+                let stdout = std::io::stdout();
+                let handle = stdout.lock();
+                let writer = std::io::BufWriter::new(handle);
+                print_with_after_context(&mut reader, re, flags, context, group_separator, writer)?;
+                Ok(())
             }
             // Exit with explicit error if context length isn't a valid integer
             Err(_) => {
@@ -392,14 +398,14 @@ mod tests {
     }
 
     #[test]
-    fn test_count_matches() {
+    fn number_of_matches() {
         let (reader, regex, _) = test_inputs("like");
         let number_of_matches = count_matches(reader, regex);
         assert_eq!(number_of_matches, 5);
     }
 
     #[test]
-    fn test_print_matches_with_line_number() {
+    fn print_matches_with_line_number() {
         let flags = Flags {
             count: false,
             line_number: true,
@@ -421,7 +427,7 @@ mod tests {
     }
 
     #[test]
-    fn test_print_matches_without_line_number() {
+    fn print_matches_without_line_number() {
         let flags = Flags {
             count: false,
             line_number: false,
@@ -437,6 +443,56 @@ mod tests {
         assert_eq!(
             writer,
             "distresses me like a letter of farewell. I feel as if I’m always on the\n"
+                .as_bytes()
+                .to_vec()
+        );
+    }
+
+    #[test]
+    fn after_context_without_line_number() {
+        let flags = Flags {
+            count: false,
+            line_number: false,
+            colorize: false,
+            ignore_case: false,
+            invert_match: false,
+            after_context: true,
+            before_context: false,
+            context: false,
+        };
+        let (reader, regex, mut writer) = test_inputs("distress");
+        print_with_after_context(reader, regex, &flags, 3, "####", &mut writer).unwrap();
+        assert_eq!(
+            writer,
+            "distresses me like a letter of farewell. I feel as if I’m always on the
+verge of waking up. I’m oppressed by the very self that encases me,
+asphyxiated by conclusions, and I’d gladly scream if my voice could
+reach somewhere. But there’s this heavy slumber that moves from one\n"
+                .as_bytes()
+                .to_vec()
+        );
+    }
+
+    #[test]
+    fn after_context_with_line_number() {
+        let flags = Flags {
+            count: false,
+            line_number: true,
+            colorize: false,
+            ignore_case: false,
+            invert_match: false,
+            after_context: true,
+            before_context: false,
+            context: false,
+        };
+        let (reader, regex, mut writer) = test_inputs("distress");
+        print_with_after_context(reader, regex, &flags, 3, "####", &mut writer).unwrap();
+        assert_eq!(
+            writer,
+            "6: distresses me like a letter of farewell. I feel as if I’m always on the
+7: verge of waking up. I’m oppressed by the very self that encases me,
+8: asphyxiated by conclusions, and I’d gladly scream if my voice could
+9: reach somewhere. But there’s this heavy slumber that moves from one\n"
                 .as_bytes()
                 .to_vec()
         );
