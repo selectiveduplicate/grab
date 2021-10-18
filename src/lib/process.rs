@@ -10,7 +10,6 @@ fn count_matches<T: BufRead + Sized>(reader: T, re: Regex) -> u32 {
     reader.lines().for_each(|line| {
         re.find(&line.unwrap()).is_some().then(|| matches += 1);
     });
-
     matches
 }
 
@@ -53,20 +52,25 @@ fn print_with_after_context<T: BufRead + Sized>(
             let upper_bound = matched_number + context_number;
             if (i >= *matched_number) && (i <= upper_bound) {
                 match ((i == *matched_number), flags.colorize) {
-                    (true, true) => matched_lines_with_number[j].push((
-                        i,
-                        re.replace_all(line, Colors::colorize_pattern(Colors::Red, &patterns[j]))
-                            .to_string(),
-                    )),
+                    (true, true) => {
+                        let match_iter = re.find_iter(line);
+                        let mut something = line.clone();
+                        for mat in match_iter {
+                            something = re
+                                .replace(
+                                    &something,
+                                    Colors::colorize_pattern(Colors::Red, mat.as_str()),
+                                )
+                                .to_string();
+                        }
+                        matched_lines_with_number[j].push((i, something))
+                    }
                     (true, _) => matched_lines_with_number[j].push((i, line.clone())),
                     _ => matched_lines_with_number[j].push((i, line.clone())),
                 }
             }
         }
     }
-    //let stdout = std::io::stdout();
-    //let handle = stdout.lock();
-    //let mut writer = std::io::BufWriter::new(handle);
 
     // Prints matches with context lines.
     // Each group is separated by `group_separator`.
@@ -134,12 +138,19 @@ fn print_with_before_context<T: BufRead + Sized>(
             let starting_point = matched_number.saturating_sub(context_number);
             if (i >= starting_point) && (i <= *matched_number) {
                 match ((i == *matched_number), flags.colorize) {
-                    (true, true) => matched_lines_with_number[j].push((
-                        i,
-                        re.replace_all(line, Colors::colorize_pattern(Colors::Red, &patterns[j]))
-                            .to_string(),
-                    )),
-                    (true, _) => matched_lines_with_number[j].push((i, line.clone())),
+                    (true, true) => {
+                        let match_iter = re.find_iter(line);
+                        let mut something = line.clone();
+                        for mat in match_iter {
+                            something = re
+                                .replace(
+                                    &something,
+                                    Colors::colorize_pattern(Colors::Red, mat.as_str()),
+                                )
+                                .to_string();
+                        }
+                        matched_lines_with_number[j].push((i, something))
+                    }
                     _ => matched_lines_with_number[j].push((i, line.clone())),
                 }
             }
@@ -214,12 +225,19 @@ fn print_with_context<T: BufRead + Sized>(
             let upper_bound = matched_number + context_number;
             if (i >= lower_bound) && (i <= upper_bound) {
                 match ((i == *matched_number), flags.colorize) {
-                    (true, true) => matched_lines_with_number[j].push((
-                        i,
-                        re.replace_all(line, Colors::colorize_pattern(Colors::Red, &patterns[j]))
-                            .to_string(),
-                    )),
-                    (true, _) => matched_lines_with_number[j].push((i, line.clone())),
+                    (true, true) => {
+                        let match_iter = re.find_iter(line);
+                        let mut something = line.clone();
+                        for mat in match_iter {
+                            something = re
+                                .replace(
+                                    &something,
+                                    Colors::colorize_pattern(Colors::Red, mat.as_str()),
+                                )
+                                .to_string();
+                        }
+                        matched_lines_with_number[j].push((i, something))
+                    }
                     _ => matched_lines_with_number[j].push((i, line.clone())),
                 }
             }
@@ -348,32 +366,53 @@ fn print_matches<T: BufRead + Sized>(
     // `.next()` on an iterator returns the item wrapped in an Option
     // So Each `Some` variant of that option will hold the (index, value) pair
     while let Some((i, Ok(line))) = lines.next() {
-        let pattern = match re.find(&line) {
-            // `re.find()` returns the byte range holding the first match
-            // as_str() returns that match in text form
-            Some(pattern) => pattern.as_str(),
-            None => continue,
-        };
-        match (flags.line_number, flags.colorize) {
-            (true, false) => writeln!(
-                writer,
-                "{}: {}",
-                Colors::colorize_pattern(Colors::Green, &format!("{}", i + 1)),
-                line
-            )?,
-            (false, true) => writeln!(
-                writer,
-                "{}",
-                re.replace_all(&line, Colors::colorize_pattern(Colors::Red, pattern))
-            )?,
-            (true, true) => writeln!(
-                writer,
-                "{}: {}",
-                Colors::colorize_pattern(Colors::Green, &format!("{}", i + 1)),
-                re.replace_all(&line, Colors::colorize_pattern(Colors::Red, pattern))
-            )?,
-            _ => writeln!(writer, "{}", line)?,
+        if re.find(&line).is_none() {
+            continue;
         }
+        let match_iter = re.find_iter(&line);
+        let mut something = line.clone();
+
+        match (flags.colorize, flags.line_number) {
+            (true, true) => {
+                // colorize the patterns
+                for mat in match_iter {
+                    something = format!(
+                        "{}",
+                        re.replace(
+                            &something,
+                            Colors::colorize_pattern(Colors::Red, mat.as_str())
+                        )
+                    );
+                }
+                // add colored line numbers
+                something = format!(
+                    "{}: {}",
+                    Colors::colorize_pattern(Colors::Green, &format!("{}", i + 1)),
+                    something
+                );
+            }
+            (true, false) => {
+                for mat in match_iter {
+                    something = format!(
+                        "{}",
+                        re.replace(
+                            &something,
+                            Colors::colorize_pattern(Colors::Red, mat.as_str())
+                        )
+                    );
+                }
+            }
+            (false, true) => {
+                something = format!(
+                    "{}: {}",
+                    Colors::colorize_pattern(Colors::Green, &format!("{}", i + 1)),
+                    something
+                );
+            }
+            _ => (),
+        }
+
+        writeln!(writer, "{}", something)?;
     }
     writer.flush()?;
     Ok(())
@@ -525,6 +564,45 @@ reach somewhere. But there’s this heavy slumber that moves from one\n"
 \u{1b}[32m7\u{1b}[0m: verge of waking up. I’m oppressed by the very self that encases me,
 \u{1b}[32m8\u{1b}[0m: asphyxiated by conclusions, and I’d gladly scream if my voice could
 \u{1b}[32m9\u{1b}[0m: reach somewhere. But there’s this heavy slumber that moves from one\n"
+                .as_bytes()
+                .to_vec()
+        );
+    }
+
+    #[test]
+    fn after_context_with_for_ten_char_words_and_pattern_color() {
+        let flags = Flags {
+            count: false,
+            line_number: false,
+            colorize: true,
+            ignore_case: false,
+            invert_match: false,
+            after_context: true,
+            before_context: false,
+            context: false,
+        };
+        let (reader, regex, mut writer) = test_inputs(r"\b\w{10}\b");
+        print_with_after_context(reader, regex, &flags, 2, "####", &mut writer).unwrap();
+        assert_eq!(
+            writer,
+            "confused landscape, along with \u{1b}[31meverything\u{1b}[0m else.
+
+In these times when an abyss opens up in my soul, the tiniest detail
+\u{1b}[34m####\u{1b}[0m
+\u{1b}[31mdistresses\u{1b}[0m me like a letter of farewell. I feel as if I’m always on the
+verge of waking up. I’m oppressed by the very self that encases me,
+asphyxiated by conclusions, and I’d gladly scream if my voice could
+\u{1b}[34m####\u{1b}[0m
+group of my \u{1b}[31msensations\u{1b}[0m to another, like drifting clouds that make the
+half-shaded grass of sprawling fields turn various colours of sun and
+green.
+\u{1b}[34m####\u{1b}[0m
+illusions or moments of calm, large hopes \u{1b}[31mchannelled\u{1b}[0m into the
+landscape, sorrows like closed rooms, certain voices, a huge weariness,
+the unwritten gospel.
+\u{1b}[34m####\u{1b}[0m
+We all have our vanity, and that vanity is our way of \u{1b}[31mforgetting\u{1b}[0m that
+there are other people with a soul like our own. My vanity consists of\n"
                 .as_bytes()
                 .to_vec()
         );
