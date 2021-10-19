@@ -54,16 +54,16 @@ fn print_with_after_context<T: BufRead + Sized>(
                 match ((i == *matched_number), flags.colorize) {
                     (true, true) => {
                         let match_iter = re.find_iter(line);
-                        let mut something = line.clone();
+                        let mut matched_line = line.clone();
                         for mat in match_iter {
-                            something = re
+                            matched_line = re
                                 .replace(
-                                    &something,
+                                    &matched_line,
                                     Colors::colorize_pattern(Colors::Red, mat.as_str()),
                                 )
                                 .to_string();
                         }
-                        matched_lines_with_number[j].push((i, something))
+                        matched_lines_with_number[j].push((i, matched_line))
                     }
                     (true, _) => matched_lines_with_number[j].push((i, line.clone())),
                     _ => matched_lines_with_number[j].push((i, line.clone())),
@@ -140,16 +140,16 @@ fn print_with_before_context<T: BufRead + Sized>(
                 match ((i == *matched_number), flags.colorize) {
                     (true, true) => {
                         let match_iter = re.find_iter(line);
-                        let mut something = line.clone();
+                        let mut matched_line = line.clone();
                         for mat in match_iter {
-                            something = re
+                            matched_line = re
                                 .replace(
-                                    &something,
+                                    &matched_line,
                                     Colors::colorize_pattern(Colors::Red, mat.as_str()),
                                 )
                                 .to_string();
                         }
-                        matched_lines_with_number[j].push((i, something))
+                        matched_lines_with_number[j].push((i, matched_line))
                     }
                     _ => matched_lines_with_number[j].push((i, line.clone())),
                 }
@@ -227,16 +227,16 @@ fn print_with_context<T: BufRead + Sized>(
                 match ((i == *matched_number), flags.colorize) {
                     (true, true) => {
                         let match_iter = re.find_iter(line);
-                        let mut something = line.clone();
+                        let mut matched_line = line.clone();
                         for mat in match_iter {
-                            something = re
+                            matched_line = re
                                 .replace(
-                                    &something,
+                                    &matched_line,
                                     Colors::colorize_pattern(Colors::Red, mat.as_str()),
                                 )
                                 .to_string();
                         }
-                        matched_lines_with_number[j].push((i, something))
+                        matched_lines_with_number[j].push((i, matched_line))
                     }
                     _ => matched_lines_with_number[j].push((i, line.clone())),
                 }
@@ -370,49 +370,49 @@ fn print_matches<T: BufRead + Sized>(
             continue;
         }
         let match_iter = re.find_iter(&line);
-        let mut something = line.clone();
+        let mut matched_line = line.clone();
 
         match (flags.colorize, flags.line_number) {
             (true, true) => {
                 // colorize the patterns
                 for mat in match_iter {
-                    something = format!(
+                    matched_line = format!(
                         "{}",
                         re.replace(
-                            &something,
+                            &matched_line,
                             Colors::colorize_pattern(Colors::Red, mat.as_str())
                         )
                     );
                 }
                 // add colored line numbers
-                something = format!(
+                matched_line = format!(
                     "{}: {}",
                     Colors::colorize_pattern(Colors::Green, &format!("{}", i + 1)),
-                    something
+                    matched_line
                 );
             }
             (true, false) => {
                 for mat in match_iter {
-                    something = format!(
+                    matched_line = format!(
                         "{}",
                         re.replace(
-                            &something,
+                            &matched_line,
                             Colors::colorize_pattern(Colors::Red, mat.as_str())
                         )
                     );
                 }
             }
             (false, true) => {
-                something = format!(
+                matched_line = format!(
                     "{}: {}",
                     Colors::colorize_pattern(Colors::Green, &format!("{}", i + 1)),
-                    something
+                    matched_line
                 );
             }
             _ => (),
         }
 
-        writeln!(writer, "{}", something)?;
+        writeln!(writer, "{}", matched_line)?;
     }
     writer.flush()?;
     Ok(())
