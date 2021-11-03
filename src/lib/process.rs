@@ -23,9 +23,6 @@ fn print_with_after_context<T: BufRead + Sized>(
     group_separator: &str,
     mut writer: impl Write,
 ) -> Result<(), std::io::Error> {
-    // For all the matched words/terms
-    let mut patterns: Vec<String> = Vec::new();
-
     // We need to iterate over the `reader` content twice, which is not possible so
     // we move them to a Vector that we can iterate over more than once.
     let lines = reader.lines().collect::<std::io::Result<Vec<String>>>()?;
@@ -36,7 +33,7 @@ fn print_with_after_context<T: BufRead + Sized>(
 
     for (i, line_) in lines.iter().enumerate() {
         match re.find(line_) {
-            Some(pattern) => patterns.push(pattern.as_str().to_string()),
+            Some(_) => (),
             None => continue,
         }
 
@@ -114,8 +111,6 @@ fn print_with_before_context<T: BufRead + Sized>(
     group_separator: &str,
     mut writer: impl Write,
 ) -> Result<(), std::io::Error> {
-    let mut patterns: Vec<String> = Vec::new();
-
     let lines = reader.lines().collect::<std::io::Result<Vec<String>>>()?;
 
     let mut matched_line_numbers: Vec<usize> = Vec::with_capacity(lines.len());
@@ -123,7 +118,7 @@ fn print_with_before_context<T: BufRead + Sized>(
 
     for (i, line_) in lines.iter().enumerate() {
         match re.find(line_) {
-            Some(pattern) => patterns.push(pattern.as_str().to_string()),
+            Some(_) => (),
             None => continue,
         }
 
@@ -191,14 +186,13 @@ fn print_with_before_context<T: BufRead + Sized>(
 /// Prints leading and trailing context lines with or without line numbers.
 /// Each group of match and its context is separated by `group_separator`.
 fn print_with_context<T: BufRead + Sized>(
-    reader: &mut T,
+    reader: T,
     re: Regex,
     flags: &Flags,
     context_number: usize,
     group_separator: &str,
+    mut writer: impl Write,
 ) -> Result<(), std::io::Error> {
-    let mut patterns: Vec<String> = Vec::new();
-
     let lines = reader.lines().collect::<std::io::Result<Vec<String>>>()?;
 
     let mut matched_line_numbers: Vec<usize> = Vec::with_capacity(lines.len());
@@ -206,7 +200,7 @@ fn print_with_context<T: BufRead + Sized>(
 
     for (i, line_) in lines.iter().enumerate() {
         match re.find(line_) {
-            Some(pattern) => patterns.push(pattern.as_str().to_string()),
+            Some(_) => (),
             None => continue,
         }
 
@@ -241,12 +235,6 @@ fn print_with_context<T: BufRead + Sized>(
             }
         }
     }
-
-    // Prepare stdout for printing to it
-    let stdout = std::io::stdout();
-    let handle = stdout.lock();
-    let mut writer = std::io::BufWriter::new(handle);
-
     for (matched_line, is_last, is_first) in matched_lines_with_number
         .iter()
         .enumerate()
@@ -327,7 +315,14 @@ pub fn choose_process<T: BufRead + Sized>(
                     let stdout = std::io::stdout();
                     let handle = stdout.lock();
                     let writer = std::io::BufWriter::new(handle);
-                    print_with_before_context(&mut reader, re, flags, context, group_separator, writer)?;
+                    print_with_before_context(
+                        &mut reader,
+                        re,
+                        flags,
+                        context,
+                        group_separator,
+                        writer,
+                    )?;
                     Ok(())
                 }
                 // Exit with explicit error if context length isn't a valid integer
@@ -339,7 +334,13 @@ pub fn choose_process<T: BufRead + Sized>(
         }
         (_, _, _, true, _) => {
             match context.unwrap().parse::<usize>() {
-                Ok(context) => print_with_context(&mut reader, re, flags, context, group_separator),
+                Ok(context) => {
+                    let stdout = std::io::stdout();
+                    let handle = stdout.lock();
+                    let writer = std::io::BufWriter::new(handle);
+                    print_with_context(&mut reader, re, flags, context, group_separator, writer)?;
+                    Ok(())
+                }
                 // Exit with explicit error if context length isn't a valid integer
                 Err(_) => {
                     eprintln!("Invalid context length argument: must be an integer.");
@@ -634,7 +635,7 @@ In these times when an abyss opens up in my soul, the tiniest detail
                 .to_vec()
         );
     }
-    
+
     #[test]
     fn before_context_with_line_number() {
         let flags = Flags {
@@ -655,6 +656,102 @@ In these times when an abyss opens up in my soul, the tiniest detail
 \u{1b}[32m4\u{1b}[0m: 
 \u{1b}[32m5\u{1b}[0m: In these times when an abyss opens up in my soul, the tiniest detail
 \u{1b}[32m6\u{1b}[0m: \u{1b}[31mdistress\u{1b}[0mes me like a letter of farewell. I feel as if I’m always on the\n"
+                .as_bytes()
+                .to_vec()
+        );
+    }
+
+    #[test]
+    fn context_with_line_number() {
+        let flags = Flags {
+            count: false,
+            line_number: true,
+            colorize: true,
+            ignore_case: false,
+            invert_match: false,
+            after_context: false,
+            before_context: false,
+            context: true,
+        };
+        let (reader, regex, mut writer) = test_inputs("like");
+        print_with_context(reader, regex, &flags, 2, "####", &mut writer).unwrap();
+        assert_eq!(
+            writer,
+            "\u{1b}[32m4\u{1b}[0m: 
+\u{1b}[32m5\u{1b}[0m: In these times when an abyss opens up in my soul, the tiniest detail
+\u{1b}[32m6\u{1b}[0m: distresses me \u{1b}[31mlike\u{1b}[0m a letter of farewell. I feel as if I’m always on the
+\u{1b}[32m7\u{1b}[0m: verge of waking up. I’m oppressed by the very self that encases me,
+\u{1b}[32m8\u{1b}[0m: asphyxiated by conclusions, and I’d gladly scream if my voice could
+\u{1b}[34m####\u{1b}[0m
+\u{1b}[32m8\u{1b}[0m: asphyxiated by conclusions, and I’d gladly scream if my voice could
+\u{1b}[32m9\u{1b}[0m: reach somewhere. But there’s this heavy slumber that moves from one
+\u{1b}[32m10\u{1b}[0m: group of my sensations to another, \u{1b}[31mlike\u{1b}[0m drifting clouds that make the
+\u{1b}[32m11\u{1b}[0m: half-shaded grass of sprawling fields turn various colours of sun and
+\u{1b}[32m12\u{1b}[0m: green.
+\u{1b}[34m####\u{1b}[0m
+\u{1b}[32m12\u{1b}[0m: green.
+\u{1b}[32m13\u{1b}[0m: 
+\u{1b}[32m14\u{1b}[0m: I’m \u{1b}[31mlike\u{1b}[0m someone searching at random, not knowing what object he’s
+\u{1b}[32m15\u{1b}[0m: looking for nor where it was hidden. We play hide-and-seek with no
+\u{1b}[32m16\u{1b}[0m: one. There’s a transcendent trick in all of this, a fluid divinity we can
+\u{1b}[34m####\u{1b}[0m
+\u{1b}[32m19\u{1b}[0m: Yes, I reread these pages that represent worthless hours, brief
+\u{1b}[32m20\u{1b}[0m: illusions or moments of calm, large hopes channelled into the
+\u{1b}[32m21\u{1b}[0m: landscape, sorrows \u{1b}[31mlike\u{1b}[0m closed rooms, certain voices, a huge weariness,
+\u{1b}[32m22\u{1b}[0m: the unwritten gospel.
+\u{1b}[32m23\u{1b}[0m: 
+\u{1b}[34m####\u{1b}[0m
+\u{1b}[32m23\u{1b}[0m: 
+\u{1b}[32m24\u{1b}[0m: We all have our vanity, and that vanity is our way of forgetting that
+\u{1b}[32m25\u{1b}[0m: there are other people with a soul \u{1b}[31mlike\u{1b}[0m our own. My vanity consists of\n"
+                .as_bytes()
+                .to_vec()
+        );
+    }
+    
+    #[test]
+    fn context_without_line_number() {
+        let flags = Flags {
+            count: false,
+            line_number: false,
+            colorize: true,
+            ignore_case: false,
+            invert_match: false,
+            after_context: false,
+            before_context: false,
+            context: true,
+        };
+        let (reader, regex, mut writer) = test_inputs("like");
+        print_with_context(reader, regex, &flags, 2, "####", &mut writer).unwrap();
+        assert_eq!(
+            writer,
+            "
+In these times when an abyss opens up in my soul, the tiniest detail
+distresses me \u{1b}[31mlike\u{1b}[0m a letter of farewell. I feel as if I’m always on the
+verge of waking up. I’m oppressed by the very self that encases me,
+asphyxiated by conclusions, and I’d gladly scream if my voice could
+\u{1b}[34m####\u{1b}[0m
+asphyxiated by conclusions, and I’d gladly scream if my voice could
+reach somewhere. But there’s this heavy slumber that moves from one
+group of my sensations to another, \u{1b}[31mlike\u{1b}[0m drifting clouds that make the
+half-shaded grass of sprawling fields turn various colours of sun and
+green.
+\u{1b}[34m####\u{1b}[0m
+green.
+
+I’m \u{1b}[31mlike\u{1b}[0m someone searching at random, not knowing what object he’s
+looking for nor where it was hidden. We play hide-and-seek with no
+one. There’s a transcendent trick in all of this, a fluid divinity we can
+\u{1b}[34m####\u{1b}[0m
+Yes, I reread these pages that represent worthless hours, brief
+illusions or moments of calm, large hopes channelled into the
+landscape, sorrows \u{1b}[31mlike\u{1b}[0m closed rooms, certain voices, a huge weariness,
+the unwritten gospel.
+
+\u{1b}[34m####\u{1b}[0m
+
+We all have our vanity, and that vanity is our way of forgetting that
+there are other people with a soul \u{1b}[31mlike\u{1b}[0m our own. My vanity consists of\n"
                 .as_bytes()
                 .to_vec()
         );
