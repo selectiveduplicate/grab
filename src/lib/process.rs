@@ -107,11 +107,12 @@ fn print_with_after_context<T: BufRead + Sized>(
 /// Prints leading context lines with or without line numbers.
 /// Each group of match and its context is separated by `group_separator`.
 fn print_with_before_context<T: BufRead + Sized>(
-    reader: &mut T,
+    reader: T,
     re: Regex,
     flags: &Flags,
     context_number: usize,
     group_separator: &str,
+    mut writer: impl Write,
 ) -> Result<(), std::io::Error> {
     let mut patterns: Vec<String> = Vec::new();
 
@@ -157,9 +158,6 @@ fn print_with_before_context<T: BufRead + Sized>(
         }
     }
 
-    let stdout = std::io::stdout();
-    let handle = stdout.lock();
-    let mut writer = std::io::BufWriter::new(handle);
     for (matched_line, is_last, is_first) in matched_lines_with_number
         .iter()
         .enumerate()
@@ -326,7 +324,11 @@ pub fn choose_process<T: BufRead + Sized>(
         (false, false, true, _, _) => {
             match before_context_number.unwrap().parse::<usize>() {
                 Ok(context) => {
-                    print_with_before_context(&mut reader, re, flags, context, group_separator)
+                    let stdout = std::io::stdout();
+                    let handle = stdout.lock();
+                    let writer = std::io::BufWriter::new(handle);
+                    print_with_before_context(&mut reader, re, flags, context, group_separator, writer)?;
+                    Ok(())
                 }
                 // Exit with explicit error if context length isn't a valid integer
                 Err(_) => {
@@ -603,6 +605,56 @@ the unwritten gospel.
 \u{1b}[34m####\u{1b}[0m
 We all have our vanity, and that vanity is our way of \u{1b}[31mforgetting\u{1b}[0m that
 there are other people with a soul like our own. My vanity consists of\n"
+                .as_bytes()
+                .to_vec()
+        );
+    }
+
+    #[test]
+    fn before_context_without_line_number() {
+        let flags = Flags {
+            count: false,
+            line_number: false,
+            colorize: true,
+            ignore_case: false,
+            invert_match: false,
+            after_context: false,
+            before_context: true,
+            context: false,
+        };
+        let (reader, regex, mut writer) = test_inputs("distress");
+        print_with_before_context(reader, regex, &flags, 3, "####", &mut writer).unwrap();
+        assert_eq!(
+            writer,
+            "confused landscape, along with everything else.
+
+In these times when an abyss opens up in my soul, the tiniest detail
+\u{1b}[31mdistress\u{1b}[0mes me like a letter of farewell. I feel as if I’m always on the\n"
+                .as_bytes()
+                .to_vec()
+        );
+    }
+    
+    #[test]
+    fn before_context_with_line_number() {
+        let flags = Flags {
+            count: false,
+            line_number: true,
+            colorize: true,
+            ignore_case: false,
+            invert_match: false,
+            after_context: false,
+            before_context: true,
+            context: false,
+        };
+        let (reader, regex, mut writer) = test_inputs("distress");
+        print_with_before_context(reader, regex, &flags, 3, "####", &mut writer).unwrap();
+        assert_eq!(
+            writer,
+            "\u{1b}[32m3\u{1b}[0m: confused landscape, along with everything else.
+\u{1b}[32m4\u{1b}[0m: 
+\u{1b}[32m5\u{1b}[0m: In these times when an abyss opens up in my soul, the tiniest detail
+\u{1b}[32m6\u{1b}[0m: \u{1b}[31mdistress\u{1b}[0mes me like a letter of farewell. I feel as if I’m always on the\n"
                 .as_bytes()
                 .to_vec()
         );
