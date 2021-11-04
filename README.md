@@ -21,10 +21,10 @@ grab --help
 * The following searches for the words `Like` or `like`, using the `--ignore-case` flag:
 
 ```shell
-grab "like" --ignore-like src/data/pessoa.txt
+grab "like" --ignore-case src/data/pessoa.txt
 ```
 
-It'll output the following text (you can also specify the `--color` flag to colorize the matches)
+It'll output the following text (you can also specify the `--color` flag to colorize the matches):
 
 ```
 Like someone on a hill who tries to make out the people in the
