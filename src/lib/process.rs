@@ -2,7 +2,7 @@ use regex::Regex;
 use std::io::{BufRead, Write};
 
 use crate::lib::flag::Flags;
-use crate::lib::utils::Colors;
+use crate::lib::utils::{parse_context_number, Colors};
 
 /// Calculates the number of matches found according to the regex pattern and returns it
 fn count_matches<T: BufRead + Sized>(reader: T, re: Regex) -> u32 {
@@ -277,78 +277,41 @@ pub fn choose_process<T: BufRead + Sized>(
     context: Option<&str>,
     group_separator: &str,
 ) -> Result<(), std::io::Error> {
-    match (
-        flags.count,
-        flags.after_context,
-        flags.before_context,
-        flags.context,
-        flags.invert_match,
-    ) {
-        (true, _, _, _, _) => {
-            println!("{}", count_matches(reader, re));
+    if flags.count {
+        println!("{}", count_matches(reader, re));
+        Ok(())
+    } else {
+        if flags.after_context {
+            let context = parse_context_number(after_context_number);
+            let stdout = std::io::stdout();
+            let handle = stdout.lock();
+            let writer = std::io::BufWriter::new(handle);
+            print_with_after_context(&mut reader, re, flags, context, group_separator, writer)?;
             Ok(())
-        }
-        (false, false, false, false, false) => {
+        } else if flags.before_context {
+            let context = parse_context_number(before_context_number);
+            let stdout = std::io::stdout();
+            let handle = stdout.lock();
+            let writer = std::io::BufWriter::new(handle);
+            print_with_before_context(&mut reader, re, flags, context, group_separator, writer)?;
+            Ok(())
+        } else if flags.context {
+            let context = parse_context_number(context);
+            let stdout = std::io::stdout();
+            let handle = stdout.lock();
+            let writer = std::io::BufWriter::new(handle);
+            print_with_context(&mut reader, re, flags, context, group_separator, writer)?;
+            Ok(())
+        }  else if flags.invert_match {
+            print_invert_matches(reader, re, flags)?;
+            Ok(())
+        } else {
             let stdout = std::io::stdout();
             let handle = stdout.lock();
             let writer = std::io::BufWriter::new(handle);
             print_matches(reader, re, flags, writer)?;
             Ok(())
         }
-        (false, true, _, _, _) => match after_context_number.unwrap().parse::<usize>() {
-            Ok(context) => {
-                let stdout = std::io::stdout();
-                let handle = stdout.lock();
-                let writer = std::io::BufWriter::new(handle);
-                print_with_after_context(&mut reader, re, flags, context, group_separator, writer)?;
-                Ok(())
-            }
-            // Exit with explicit error if context length isn't a valid integer
-            Err(_) => {
-                eprintln!("Invalid context length argument: must be an integer.");
-                std::process::exit(1);
-            }
-        },
-        (false, false, true, _, _) => {
-            match before_context_number.unwrap().parse::<usize>() {
-                Ok(context) => {
-                    let stdout = std::io::stdout();
-                    let handle = stdout.lock();
-                    let writer = std::io::BufWriter::new(handle);
-                    print_with_before_context(
-                        &mut reader,
-                        re,
-                        flags,
-                        context,
-                        group_separator,
-                        writer,
-                    )?;
-                    Ok(())
-                }
-                // Exit with explicit error if context length isn't a valid integer
-                Err(_) => {
-                    eprintln!("Invalid context length argument: must be an integer.");
-                    std::process::exit(1);
-                }
-            }
-        }
-        (_, _, _, true, _) => {
-            match context.unwrap().parse::<usize>() {
-                Ok(context) => {
-                    let stdout = std::io::stdout();
-                    let handle = stdout.lock();
-                    let writer = std::io::BufWriter::new(handle);
-                    print_with_context(&mut reader, re, flags, context, group_separator, writer)?;
-                    Ok(())
-                }
-                // Exit with explicit error if context length isn't a valid integer
-                Err(_) => {
-                    eprintln!("Invalid context length argument: must be an integer.");
-                    std::process::exit(1);
-                }
-            }
-        }
-        (_, _, _, _, true) => print_invert_matches(reader, re, flags),
     }
 }
 
@@ -708,7 +671,7 @@ In these times when an abyss opens up in my soul, the tiniest detail
                 .to_vec()
         );
     }
-    
+
     #[test]
     fn context_without_line_number() {
         let flags = Flags {
