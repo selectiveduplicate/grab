@@ -1,5 +1,5 @@
-use std::num::ParseIntError;
 use colored::Colorize;
+use std::num::ParseIntError;
 
 /// Contains colors to apply to patterns like group separators and matches
 pub enum Colors {
@@ -29,5 +29,8 @@ fn exit_on_invalid_context(err: ParseIntError) {
 /// Parses the context number, returning a `usize` upon success.
 /// Exits the program with exit code 1 if the argument is not an integer.
 pub fn parse_context_number(n: Option<&str>) -> usize {
-    n.unwrap().parse::<usize>().map_err(exit_on_invalid_context).unwrap()
+    n.unwrap()
+        .parse::<usize>()
+        .map_err(exit_on_invalid_context)
+        .unwrap()
 }

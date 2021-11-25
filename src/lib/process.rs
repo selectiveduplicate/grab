@@ -32,14 +32,13 @@ fn print_with_after_context<T: BufRead + Sized>(
     let mut matched_lines_with_number: Vec<Vec<(usize, String)>> = Vec::with_capacity(lines.len());
 
     for (i, line_) in lines.iter().enumerate() {
-        match re.find(line_) {
-            Some(_) => (),
-            None => continue,
+        if re.find(line_).is_some() {
+            matched_line_numbers.push(i);
+            let v = Vec::with_capacity(context_number + 1);
+            matched_lines_with_number.push(v);
+        } else {
+            continue;
         }
-
-        matched_line_numbers.push(i);
-        let v = Vec::with_capacity(context_number + 1);
-        matched_lines_with_number.push(v);
     }
 
     // We need to iterate `matched_number` of times
@@ -48,22 +47,20 @@ fn print_with_after_context<T: BufRead + Sized>(
         for (i, line) in lines.iter().enumerate() {
             let upper_bound = matched_number + context_number;
             if (i >= *matched_number) && (i <= upper_bound) {
-                match ((i == *matched_number), flags.colorize) {
-                    (true, true) => {
-                        let match_iter = re.find_iter(line);
-                        let mut matched_line = line.clone();
-                        for mat in match_iter {
-                            matched_line = re
-                                .replace(
-                                    &matched_line,
-                                    Colors::colorize_pattern(Colors::Red, mat.as_str()),
-                                )
-                                .to_string();
-                        }
-                        matched_lines_with_number[j].push((i, matched_line))
+                if (i == *matched_number) && (flags.colorize) {
+                    let match_iter = re.find_iter(line);
+                    let mut matched_line = line.clone();
+                    for mat in match_iter {
+                        matched_line = re
+                            .replace(
+                                &matched_line,
+                                Colors::colorize_pattern(Colors::Red, mat.as_str()),
+                            )
+                            .to_string();
                     }
-                    (true, _) => matched_lines_with_number[j].push((i, line.clone())),
-                    _ => matched_lines_with_number[j].push((i, line.clone())),
+                    matched_lines_with_number[j].push((i, matched_line))
+                } else {
+                    matched_lines_with_number[j].push((i, line.clone()));
                 }
             }
         }
@@ -76,24 +73,23 @@ fn print_with_after_context<T: BufRead + Sized>(
         .enumerate()
         .map(|(index, m)| (m, index == matched_lines_with_number.len(), index == 0))
     {
-        match (is_last, is_first) {
-            (true, _) => (),
-            (_, true) => (),
-            _ => writeln!(
+        if !is_last && !is_first {
+            writeln!(
                 writer,
                 "{}",
                 Colors::colorize_pattern(Colors::Blue, group_separator)
-            )?,
+            )?
         }
         for (i, line) in matched_line.iter() {
-            match flags.line_number {
-                true => writeln!(
+            if flags.line_number {
+                writeln!(
                     writer,
                     "{}: {}",
                     Colors::colorize_pattern(Colors::Green, &format!("{}", i + 1)),
                     line
-                )?,
-                _ => writeln!(writer, "{}", line)?,
+                )?
+            } else {
+                writeln!(writer, "{}", line)?;
             }
         }
     }
@@ -117,14 +113,13 @@ fn print_with_before_context<T: BufRead + Sized>(
     let mut matched_lines_with_number: Vec<Vec<(usize, String)>> = Vec::with_capacity(lines.len());
 
     for (i, line_) in lines.iter().enumerate() {
-        match re.find(line_) {
-            Some(_) => (),
-            None => continue,
+        if re.find(line_).is_some() {
+            matched_line_numbers.push(i);
+            let v = Vec::with_capacity(context_number + 1);
+            matched_lines_with_number.push(v);
+        } else {
+            continue;
         }
-
-        matched_line_numbers.push(i);
-        let v = Vec::with_capacity(context_number + 1);
-        matched_lines_with_number.push(v);
     }
 
     for (j, matched_number) in matched_line_numbers.iter().enumerate() {
@@ -133,21 +128,20 @@ fn print_with_before_context<T: BufRead + Sized>(
             // this handles the case where a match exists on the first line
             let starting_point = matched_number.saturating_sub(context_number);
             if (i >= starting_point) && (i <= *matched_number) {
-                match ((i == *matched_number), flags.colorize) {
-                    (true, true) => {
-                        let match_iter = re.find_iter(line);
-                        let mut matched_line = line.clone();
-                        for mat in match_iter {
-                            matched_line = re
-                                .replace(
-                                    &matched_line,
-                                    Colors::colorize_pattern(Colors::Red, mat.as_str()),
-                                )
-                                .to_string();
-                        }
-                        matched_lines_with_number[j].push((i, matched_line))
+                if (i == *matched_number) && (flags.colorize) {
+                    let match_iter = re.find_iter(line);
+                    let mut matched_line = line.clone();
+                    for mat in match_iter {
+                        matched_line = re
+                            .replace(
+                                &matched_line,
+                                Colors::colorize_pattern(Colors::Red, mat.as_str()),
+                            )
+                            .to_string();
                     }
-                    _ => matched_lines_with_number[j].push((i, line.clone())),
+                    matched_lines_with_number[j].push((i, matched_line))
+                } else {
+                    matched_lines_with_number[j].push((i, line.clone()));
                 }
             }
         }
@@ -158,24 +152,23 @@ fn print_with_before_context<T: BufRead + Sized>(
         .enumerate()
         .map(|(index, m)| (m, index == matched_lines_with_number.len(), index == 0))
     {
-        match (is_last, is_first) {
-            (true, _) => (),
-            (_, true) => (),
-            _ => writeln!(
+        if !is_last && !is_first {
+            writeln!(
                 writer,
                 "{}",
                 Colors::colorize_pattern(Colors::Blue, group_separator)
-            )?,
+            )?;
         }
         for (i, line) in matched_line.iter() {
-            match flags.line_number {
-                true => writeln!(
+            if flags.line_number {
+                writeln!(
                     writer,
                     "{}: {}",
                     Colors::colorize_pattern(Colors::Green, &format!("{}", i + 1)),
                     line
-                )?,
-                _ => writeln!(writer, "{}", line)?,
+                )?;
+            } else {
+                writeln!(writer, "{}", line)?;
             }
         }
     }
@@ -199,14 +192,13 @@ fn print_with_context<T: BufRead + Sized>(
     let mut matched_lines_with_number: Vec<Vec<(usize, String)>> = Vec::with_capacity(lines.len());
 
     for (i, line_) in lines.iter().enumerate() {
-        match re.find(line_) {
-            Some(_) => (),
-            None => continue,
+        if re.find(line_).is_some() {
+            matched_line_numbers.push(i);
+            let v = Vec::with_capacity(context_number + 1);
+            matched_lines_with_number.push(v);
+        } else {
+            continue;
         }
-
-        matched_line_numbers.push(i);
-        let v = Vec::with_capacity(context_number + 1);
-        matched_lines_with_number.push(v);
     }
 
     for (j, matched_number) in matched_line_numbers.iter().enumerate() {
@@ -216,21 +208,20 @@ fn print_with_context<T: BufRead + Sized>(
             let lower_bound = matched_number.saturating_sub(context_number);
             let upper_bound = matched_number + context_number;
             if (i >= lower_bound) && (i <= upper_bound) {
-                match ((i == *matched_number), flags.colorize) {
-                    (true, true) => {
-                        let match_iter = re.find_iter(line);
-                        let mut matched_line = line.clone();
-                        for mat in match_iter {
-                            matched_line = re
-                                .replace(
-                                    &matched_line,
-                                    Colors::colorize_pattern(Colors::Red, mat.as_str()),
-                                )
-                                .to_string();
-                        }
-                        matched_lines_with_number[j].push((i, matched_line))
+                if (i == *matched_number) && (flags.colorize) {
+                    let match_iter = re.find_iter(line);
+                    let mut matched_line = line.clone();
+                    for mat in match_iter {
+                        matched_line = re
+                            .replace(
+                                &matched_line,
+                                Colors::colorize_pattern(Colors::Red, mat.as_str()),
+                            )
+                            .to_string();
                     }
-                    _ => matched_lines_with_number[j].push((i, line.clone())),
+                    matched_lines_with_number[j].push((i, matched_line))
+                } else {
+                    matched_lines_with_number[j].push((i, line.clone()));
                 }
             }
         }
@@ -240,24 +231,23 @@ fn print_with_context<T: BufRead + Sized>(
         .enumerate()
         .map(|(index, m)| (m, index == matched_lines_with_number.len(), index == 0))
     {
-        match (is_last, is_first) {
-            (true, _) => (),
-            (_, true) => (),
-            _ => writeln!(
+        if !is_last && !is_first {
+            writeln!(
                 writer,
                 "{}",
                 Colors::colorize_pattern(Colors::Blue, group_separator)
-            )?,
+            )?;
         }
         for (i, line) in matched_line.iter() {
-            match flags.line_number {
-                true => writeln!(
+            if flags.line_number {
+                writeln!(
                     writer,
                     "{}: {}",
                     Colors::colorize_pattern(Colors::Green, &format!("{}", i + 1)),
                     line
-                )?,
-                _ => writeln!(writer, "{}", line)?,
+                )?;
+            } else {
+                writeln!(writer, "{}", line)?;
             }
         }
     }
@@ -281,34 +271,25 @@ pub fn choose_process<T: BufRead + Sized>(
         println!("{}", count_matches(reader, re));
         Ok(())
     } else {
+        let stdout = std::io::stdout();
+        let handle = stdout.lock();
+        let writer = std::io::BufWriter::new(handle);
         if flags.after_context {
             let context = parse_context_number(after_context_number);
-            let stdout = std::io::stdout();
-            let handle = stdout.lock();
-            let writer = std::io::BufWriter::new(handle);
             print_with_after_context(&mut reader, re, flags, context, group_separator, writer)?;
             Ok(())
         } else if flags.before_context {
             let context = parse_context_number(before_context_number);
-            let stdout = std::io::stdout();
-            let handle = stdout.lock();
-            let writer = std::io::BufWriter::new(handle);
             print_with_before_context(&mut reader, re, flags, context, group_separator, writer)?;
             Ok(())
         } else if flags.context {
             let context = parse_context_number(context);
-            let stdout = std::io::stdout();
-            let handle = stdout.lock();
-            let writer = std::io::BufWriter::new(handle);
             print_with_context(&mut reader, re, flags, context, group_separator, writer)?;
             Ok(())
-        }  else if flags.invert_match {
-            print_invert_matches(reader, re, flags)?;
+        } else if flags.invert_match {
+            print_invert_matches(reader, re, flags, writer)?;
             Ok(())
         } else {
-            let stdout = std::io::stdout();
-            let handle = stdout.lock();
-            let writer = std::io::BufWriter::new(handle);
             print_matches(reader, re, flags, writer)?;
             Ok(())
         }
@@ -391,25 +372,23 @@ fn print_invert_matches<T: BufRead + Sized>(
     reader: T,
     re: Regex,
     flags: &Flags,
+    mut writer: impl Write,
 ) -> Result<(), std::io::Error> {
     let mut lines = reader.lines().enumerate();
-    // Prepare stdout for printing to it
-    let stdout = std::io::stdout();
-    let handle = stdout.lock();
-    let mut writer = std::io::BufWriter::new(handle);
     while let Some((i, Ok(line))) = lines.next() {
         // don't do anything if match is found
         if re.find(&line).is_some() {
             continue;
         };
-        match flags.line_number {
-            true => writeln!(
+        if flags.line_number {
+            writeln!(
                 writer,
                 "{}: {}",
                 Colors::colorize_pattern(Colors::Green, &format!("{}", i + 1)),
                 line
-            )?,
-            _ => writeln!(writer, "{}", line)?,
+            )?;
+        } else {
+            writeln!(writer, "{}", line)?;
         }
     }
     writer.flush()?;
@@ -715,6 +694,88 @@ the unwritten gospel.
 
 We all have our vanity, and that vanity is our way of forgetting that
 there are other people with a soul \u{1b}[31mlike\u{1b}[0m our own. My vanity consists of\n"
+                .as_bytes()
+                .to_vec()
+        );
+    }
+
+    #[test]
+    fn invert_matches_without_line_number() {
+        let flags = Flags {
+            count: false,
+            line_number: false,
+            colorize: false,
+            ignore_case: false,
+            invert_match: true,
+            after_context: false,
+            before_context: false,
+            context: false,
+        };
+        let (reader, regex, mut writer) = test_inputs("like");
+        print_invert_matches(reader, regex, &flags, &mut writer).unwrap();
+        assert_eq!(
+            writer,
+            "Like someone on a hill who tries to make out the people in the
+valley, I look down at myself from on high, and I’m a hazy and
+confused landscape, along with everything else.
+
+In these times when an abyss opens up in my soul, the tiniest detail
+verge of waking up. I’m oppressed by the very self that encases me,
+asphyxiated by conclusions, and I’d gladly scream if my voice could
+reach somewhere. But there’s this heavy slumber that moves from one
+half-shaded grass of sprawling fields turn various colours of sun and
+green.
+
+looking for nor where it was hidden. We play hide-and-seek with no
+one. There’s a transcendent trick in all of this, a fluid divinity we can
+only hear.
+
+Yes, I reread these pages that represent worthless hours, brief
+illusions or moments of calm, large hopes channelled into the
+the unwritten gospel.
+
+We all have our vanity, and that vanity is our way of forgetting that\n"
+                .as_bytes()
+                .to_vec()
+        );
+    }
+
+    #[test]
+    fn invert_matches_with_line_number() {
+        let flags = Flags {
+            count: false,
+            line_number: true,
+            colorize: false,
+            ignore_case: false,
+            invert_match: true,
+            after_context: false,
+            before_context: false,
+            context: false,
+        };
+        let (reader, regex, mut writer) = test_inputs("like");
+        print_invert_matches(reader, regex, &flags, &mut writer).unwrap();
+        assert_eq!(
+            writer,
+            "\u{1b}[32m1\u{1b}[0m: Like someone on a hill who tries to make out the people in the
+\u{1b}[32m2\u{1b}[0m: valley, I look down at myself from on high, and I’m a hazy and
+\u{1b}[32m3\u{1b}[0m: confused landscape, along with everything else.
+\u{1b}[32m4\u{1b}[0m: 
+\u{1b}[32m5\u{1b}[0m: In these times when an abyss opens up in my soul, the tiniest detail
+\u{1b}[32m7\u{1b}[0m: verge of waking up. I’m oppressed by the very self that encases me,
+\u{1b}[32m8\u{1b}[0m: asphyxiated by conclusions, and I’d gladly scream if my voice could
+\u{1b}[32m9\u{1b}[0m: reach somewhere. But there’s this heavy slumber that moves from one
+\u{1b}[32m11\u{1b}[0m: half-shaded grass of sprawling fields turn various colours of sun and
+\u{1b}[32m12\u{1b}[0m: green.
+\u{1b}[32m13\u{1b}[0m: 
+\u{1b}[32m15\u{1b}[0m: looking for nor where it was hidden. We play hide-and-seek with no
+\u{1b}[32m16\u{1b}[0m: one. There’s a transcendent trick in all of this, a fluid divinity we can
+\u{1b}[32m17\u{1b}[0m: only hear.
+\u{1b}[32m18\u{1b}[0m: 
+\u{1b}[32m19\u{1b}[0m: Yes, I reread these pages that represent worthless hours, brief
+\u{1b}[32m20\u{1b}[0m: illusions or moments of calm, large hopes channelled into the
+\u{1b}[32m22\u{1b}[0m: the unwritten gospel.
+\u{1b}[32m23\u{1b}[0m: 
+\u{1b}[32m24\u{1b}[0m: We all have our vanity, and that vanity is our way of forgetting that\n"
                 .as_bytes()
                 .to_vec()
         );
