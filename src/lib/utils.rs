@@ -1,3 +1,4 @@
+use std::num::ParseIntError;
 use colored::Colorize;
 
 /// Contains colors to apply to patterns like group separators and matches
@@ -19,13 +20,14 @@ impl Colors {
     }
 }
 
+/// Error handler function for `parse_context_number`.
+fn exit_on_invalid_context(err: ParseIntError) {
+    eprintln!("{}: context length argument must be an integer.", err);
+    std::process::exit(1);
+}
+
 /// Parses the context number, returning a `usize` upon success.
 /// Exits the program with exit code 1 if the argument is not an integer.
 pub fn parse_context_number(n: Option<&str>) -> usize {
-    if let Ok(context) = n.unwrap().parse::<usize>() {
-        context
-    } else {
-        eprintln!("Invalid context length argument: must be an integer.");
-        std::process::exit(1);
-    }
+    n.unwrap().parse::<usize>().map_err(exit_on_invalid_context).unwrap()
 }
