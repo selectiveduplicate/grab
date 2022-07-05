@@ -1,6 +1,7 @@
 use regex::Regex;
 use std::io::{BufRead, Write};
 
+use crate::lib::error::CliError;
 use crate::lib::flag::Flags;
 use crate::lib::utils::{parse_context_number, Colors};
 
@@ -22,7 +23,7 @@ fn print_with_after_context<T: BufRead + Sized>(
     context_number: usize,
     group_separator: &str,
     mut writer: impl Write,
-) -> Result<(), std::io::Error> {
+) -> Result<(), CliError> {
     // We need to iterate over the `reader` content twice, which is not possible so
     // we move them to a Vector that we can iterate over more than once.
     let lines = reader.lines().collect::<std::io::Result<Vec<String>>>()?;
@@ -106,7 +107,7 @@ fn print_with_before_context<T: BufRead + Sized>(
     context_number: usize,
     group_separator: &str,
     mut writer: impl Write,
-) -> Result<(), std::io::Error> {
+) -> Result<(), CliError> {
     let lines = reader.lines().collect::<std::io::Result<Vec<String>>>()?;
 
     let mut matched_line_numbers: Vec<usize> = Vec::with_capacity(lines.len());
@@ -185,7 +186,7 @@ fn print_with_context<T: BufRead + Sized>(
     context_number: usize,
     group_separator: &str,
     mut writer: impl Write,
-) -> Result<(), std::io::Error> {
+) -> Result<(), CliError> {
     let lines = reader.lines().collect::<std::io::Result<Vec<String>>>()?;
 
     let mut matched_line_numbers: Vec<usize> = Vec::with_capacity(lines.len());
@@ -266,7 +267,7 @@ pub fn choose_process<T: BufRead + Sized>(
     before_context_number: Option<&str>,
     context: Option<&str>,
     group_separator: &str,
-) -> Result<(), std::io::Error> {
+) -> Result<(), CliError> {
     if flags.count {
         println!("{}", count_matches(reader, re));
         Ok(())
@@ -275,15 +276,15 @@ pub fn choose_process<T: BufRead + Sized>(
         let handle = stdout.lock();
         let writer = std::io::BufWriter::new(handle);
         if flags.after_context {
-            let context = parse_context_number(after_context_number);
+            let context = parse_context_number(after_context_number)?;
             print_with_after_context(&mut reader, re, flags, context, group_separator, writer)?;
             Ok(())
         } else if flags.before_context {
-            let context = parse_context_number(before_context_number);
+            let context = parse_context_number(before_context_number)?;
             print_with_before_context(&mut reader, re, flags, context, group_separator, writer)?;
             Ok(())
         } else if flags.context {
-            let context = parse_context_number(context);
+            let context = parse_context_number(context)?;
             print_with_context(&mut reader, re, flags, context, group_separator, writer)?;
             Ok(())
         } else if flags.invert_match {
@@ -304,7 +305,7 @@ fn print_matches<T: BufRead + Sized>(
     re: Regex,
     flags: &Flags,
     mut writer: impl Write,
-) -> Result<(), std::io::Error> {
+) -> Result<(), CliError> {
     // `.lines()` returns an iterator over each line of `reader`, in the form of `io::Result::String`
     // So a line would be an instance like this: `Ok(line)`
     // `enumerate` gives us the (index, value) pair
@@ -373,7 +374,7 @@ fn print_invert_matches<T: BufRead + Sized>(
     re: Regex,
     flags: &Flags,
     mut writer: impl Write,
-) -> Result<(), std::io::Error> {
+) -> Result<(), CliError> {
     let mut lines = reader.lines().enumerate();
     while let Some((i, Ok(line))) = lines.next() {
         // don't do anything if match is found

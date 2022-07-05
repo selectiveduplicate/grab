@@ -1,3 +1,4 @@
+use lib::error::CliError;
 use regex::RegexBuilder;
 use std::fs::File;
 use std::io;
@@ -10,7 +11,7 @@ use lib::cli::Cli;
 use lib::flag::Flags;
 use lib::process::choose_process;
 
-fn main() -> Result<(), io::Error> {
+fn main() -> Result<(), CliError> {
     let app = Cli::new();
     let args = app.parse();
 
@@ -23,14 +24,12 @@ fn main() -> Result<(), io::Error> {
 
     let flags = Flags::set_flags(&args);
 
-    let built_regex = match flags.ignore_case {
+    let re = match flags.ignore_case {
         // if -i flag was supplied, set the value for the case insensitive (i) flag
-        true => RegexBuilder::new(pattern).case_insensitive(true).build(),
+        true => RegexBuilder::new(pattern).case_insensitive(true).build()?,
         // otherwise, build the Regex normally
-        _ => RegexBuilder::new(pattern).build(),
+        _ => RegexBuilder::new(pattern).build()?,
     };
-
-    let re = built_regex.unwrap();
 
     // if `input` argument was not given then take input from STDIN
     if input == Path::new("STDIN") {
@@ -49,14 +48,7 @@ fn main() -> Result<(), io::Error> {
             buffer.clear();
         }
     } else {
-        let input_file = match File::open(input) {
-            Ok(file) => file,
-            // Exit with explicit error for invalid file
-            Err(error) => {
-                eprintln!("Error: {}", error);
-                std::process::exit(1);
-            }
-        };
+        let input_file = File::open(input)?;
         let reader = BufReader::new(input_file);
         choose_process(
             reader,
