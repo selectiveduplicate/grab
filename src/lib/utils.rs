@@ -20,9 +20,7 @@ impl Colors {
     }
 }
 
-/// Parses the context number, returning a `usize` upon success.
-/// Exits the program with exit code 1 if the argument is not an integer.
+/// Parses the context number.
 pub fn parse_context_number(n: Option<&str>) -> Result<usize, CliError> {
-    let ctx_number = n.unwrap().parse()?;
-    Ok(ctx_number)
+    n.unwrap().parse::<usize>().map_err(|err| err.into())
 }
