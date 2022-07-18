@@ -22,10 +22,12 @@ fn main() {
 
     let pattern = args.value_of("pattern").unwrap();
     let input = Path::new(args.value_of("input").unwrap_or("STDIN"));
-    let after_context_number = args.value_of("after_context");
-    let before_context_number = args.value_of("before_context");
     let group_separator = args.value_of("group_separator").unwrap_or("---");
-    let context = args.value_of("context");
+    let context_details: [Option<&str>; 3] = [
+        args.value_of("after_context"),
+        args.value_of("before_context"),
+        args.value_of("context"),
+    ];
 
     let flags = Flags::set_flags(&args);
 
@@ -33,9 +35,7 @@ fn main() {
         (pattern, flags.ignore_case),
         input,
         &flags,
-        after_context_number,
-        before_context_number,
-        context,
+        context_details,
         group_separator,
     ) {
         fatal!("{e}");

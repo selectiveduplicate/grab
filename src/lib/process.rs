@@ -268,9 +268,7 @@ pub fn prepare_and_choose(
     needle: (&str, bool),
     path: &std::path::Path,
     flags: &Flags,
-    after_context_number: Option<&str>,
-    before_context_number: Option<&str>,
-    context: Option<&str>,
+    context_details: [Option<&str>; 3],
     group_separator: &str,
 ) -> Result<(), CliError> {
     let re = compile_regex(needle.0, needle.1)?;
@@ -286,9 +284,7 @@ pub fn prepare_and_choose(
                 re.clone(),
                 writer,
                 flags,
-                after_context_number,
-                before_context_number,
-                context,
+                context_details,
                 group_separator,
             )?;
             buffer.clear();
@@ -304,9 +300,7 @@ pub fn prepare_and_choose(
             re,
             writer,
             flags,
-            after_context_number,
-            before_context_number,
-            context,
+            context_details,
             group_separator,
         )?;
     }
@@ -315,30 +309,28 @@ pub fn prepare_and_choose(
 
 /// Checks different fields of `flags` struct and calls
 /// the appropriate method.
-pub fn choose_process<T: BufRead + Sized>(
+fn choose_process<T: BufRead + Sized>(
     mut reader: T,
     re: regex::Regex,
     writer: impl Write,
     flags: &Flags,
-    after_context_number: Option<&str>,
-    before_context_number: Option<&str>,
-    context: Option<&str>,
+    context_details: [Option<&str>; 3],
     group_separator: &str,
 ) -> Result<(), CliError> {
     if flags.count {
         println!("{}", count_matches(reader, re));
         Ok(())
     } else if flags.after_context {
-        let context = parse_context_number(after_context_number)
+        let context = parse_context_number(context_details[0])
             .map_or_else(|err| fatal!("error: {err}"), |ctx| ctx);
         print_with_after_context(&mut reader, re, flags, context, group_separator, writer)?;
         Ok(())
     } else if flags.before_context {
-        let context = parse_context_number(before_context_number)?;
+        let context = parse_context_number(context_details[1])?;
         print_with_before_context(&mut reader, re, flags, context, group_separator, writer)?;
         Ok(())
     } else if flags.context {
-        let context = parse_context_number(context)?;
+        let context = parse_context_number(context_details[2])?;
         print_with_context(&mut reader, re, flags, context, group_separator, writer)?;
         Ok(())
     } else if flags.invert_match {
