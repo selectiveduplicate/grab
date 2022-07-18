@@ -1,11 +1,17 @@
 use regex::Regex;
-use std::io::{BufRead, Write};
+use std::fs::File;
+use std::io::{self, BufRead, BufReader, Write};
+use std::path::Path;
 
+use crate::fatal;
 use crate::lib::error::CliError;
 use crate::lib::flag::Flags;
 use crate::lib::utils::{parse_context_number, Colors};
 
-/// Calculates the number of matches found according to the regex pattern and returns it
+use super::utils::compile_regex;
+
+/// Calculates the number of matches found
+/// according to the regex pattern and returns it.
 fn count_matches<T: BufRead + Sized>(reader: T, re: Regex) -> u32 {
     let mut matches: u32 = 0;
     reader.lines().for_each(|line| {
@@ -53,7 +59,7 @@ fn print_with_after_context<T: BufRead + Sized>(
                     let mut matched_line = line.clone();
                     for mat in match_iter {
                         matched_line = re
-                            .replace(
+                            .replace_all(
                                 &matched_line,
                                 Colors::colorize_pattern(Colors::Red, mat.as_str()),
                             )
@@ -134,7 +140,7 @@ fn print_with_before_context<T: BufRead + Sized>(
                     let mut matched_line = line.clone();
                     for mat in match_iter {
                         matched_line = re
-                            .replace(
+                            .replace_all(
                                 &matched_line,
                                 Colors::colorize_pattern(Colors::Red, mat.as_str()),
                             )
@@ -214,7 +220,7 @@ fn print_with_context<T: BufRead + Sized>(
                     let mut matched_line = line.clone();
                     for mat in match_iter {
                         matched_line = re
-                            .replace(
+                            .replace_all(
                                 &matched_line,
                                 Colors::colorize_pattern(Colors::Red, mat.as_str()),
                             )
@@ -256,12 +262,63 @@ fn print_with_context<T: BufRead + Sized>(
     Ok(())
 }
 
-/// Checks status of the `count` field in Flags struct.
-/// If it's set, then display number of matches returned by calling `count_matches`.
-/// Otherwise, call `print_matches`.
+/// Checks whether `path` is the standard input stream or a file
+/// and calls `choose_process` accordingly.
+pub fn prepare_and_choose(
+    needle: (&str, bool),
+    path: &std::path::Path,
+    flags: &Flags,
+    after_context_number: Option<&str>,
+    before_context_number: Option<&str>,
+    context: Option<&str>,
+    group_separator: &str,
+) -> Result<(), CliError> {
+    let re = compile_regex(needle.0, needle.1)?;
+    if path == Path::new("STDIN") {
+        let stdin = io::stdin();
+        let mut buffer = String::new();
+        while stdin.read_line(&mut buffer).is_ok() {
+            let stdout = std::io::stdout();
+            let handle = stdout.lock();
+            let writer = std::io::BufWriter::new(handle);
+            choose_process(
+                buffer.as_bytes(),
+                re.clone(),
+                writer,
+                flags,
+                after_context_number,
+                before_context_number,
+                context,
+                group_separator,
+            )?;
+            buffer.clear();
+        }
+    } else {
+        let file = File::open(path)?;
+        let reader = BufReader::new(file);
+        let stdout = std::io::stdout();
+        let handle = stdout.lock();
+        let writer = std::io::BufWriter::new(handle);
+        choose_process(
+            reader,
+            re,
+            writer,
+            flags,
+            after_context_number,
+            before_context_number,
+            context,
+            group_separator,
+        )?;
+    }
+    Ok(())
+}
+
+/// Checks different fields of `flags` struct and calls
+/// the appropriate method.
 pub fn choose_process<T: BufRead + Sized>(
     mut reader: T,
-    re: Regex,
+    re: regex::Regex,
+    writer: impl Write,
     flags: &Flags,
     after_context_number: Option<&str>,
     before_context_number: Option<&str>,
@@ -271,29 +328,25 @@ pub fn choose_process<T: BufRead + Sized>(
     if flags.count {
         println!("{}", count_matches(reader, re));
         Ok(())
+    } else if flags.after_context {
+        let context = parse_context_number(after_context_number)
+            .map_or_else(|err| fatal!("error: {err}"), |ctx| ctx);
+        print_with_after_context(&mut reader, re, flags, context, group_separator, writer)?;
+        Ok(())
+    } else if flags.before_context {
+        let context = parse_context_number(before_context_number)?;
+        print_with_before_context(&mut reader, re, flags, context, group_separator, writer)?;
+        Ok(())
+    } else if flags.context {
+        let context = parse_context_number(context)?;
+        print_with_context(&mut reader, re, flags, context, group_separator, writer)?;
+        Ok(())
+    } else if flags.invert_match {
+        print_invert_matches(reader, re, flags, writer)?;
+        Ok(())
     } else {
-        let stdout = std::io::stdout();
-        let handle = stdout.lock();
-        let writer = std::io::BufWriter::new(handle);
-        if flags.after_context {
-            let context = parse_context_number(after_context_number)?;
-            print_with_after_context(&mut reader, re, flags, context, group_separator, writer)?;
-            Ok(())
-        } else if flags.before_context {
-            let context = parse_context_number(before_context_number)?;
-            print_with_before_context(&mut reader, re, flags, context, group_separator, writer)?;
-            Ok(())
-        } else if flags.context {
-            let context = parse_context_number(context)?;
-            print_with_context(&mut reader, re, flags, context, group_separator, writer)?;
-            Ok(())
-        } else if flags.invert_match {
-            print_invert_matches(reader, re, flags, writer)?;
-            Ok(())
-        } else {
-            print_matches(reader, re, flags, writer)?;
-            Ok(())
-        }
+        print_matches(reader, re, flags, writer)?;
+        Ok(())
     }
 }
 
@@ -326,7 +379,7 @@ fn print_matches<T: BufRead + Sized>(
                 for mat in match_iter {
                     matched_line = format!(
                         "{}",
-                        re.replace(
+                        re.replace_all(
                             &matched_line,
                             Colors::colorize_pattern(Colors::Red, mat.as_str())
                         )
@@ -343,7 +396,7 @@ fn print_matches<T: BufRead + Sized>(
                 for mat in match_iter {
                     matched_line = format!(
                         "{}",
-                        re.replace(
+                        re.replace_all(
                             &matched_line,
                             Colors::colorize_pattern(Colors::Red, mat.as_str())
                         )
@@ -777,6 +830,29 @@ We all have our vanity, and that vanity is our way of forgetting that\n"
 \u{1b}[32m22\u{1b}[0m: the unwritten gospel.
 \u{1b}[32m23\u{1b}[0m: 
 \u{1b}[32m24\u{1b}[0m: We all have our vanity, and that vanity is our way of forgetting that\n"
+                .as_bytes()
+                .to_vec()
+        );
+    }
+
+    #[test]
+    fn multiple_matches_in_same_line_with_color() {
+        let flags = Flags {
+            count: false,
+            line_number: false,
+            colorize: true,
+            ignore_case: false,
+            invert_match: false,
+            after_context: false,
+            before_context: false,
+            context: false,
+        };
+        let (reader, re, mut writer) = test_inputs(r"\bour\b");
+        print_matches(reader, re, &flags, &mut writer).unwrap();
+        assert_eq!(
+            writer,
+            "We all have \u{1b}[31mour\u{1b}[0m vanity, and that vanity is \u{1b}[31mour\u{1b}[0m way of forgetting that
+there are other people with a soul like \u{1b}[31mour\u{1b}[0m own. My vanity consists of\n"
                 .as_bytes()
                 .to_vec()
         );

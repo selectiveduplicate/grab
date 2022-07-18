@@ -1,6 +1,6 @@
-use std::{io, num};
+use std::{fmt::Display, io, num};
 
-/// Errors that can occur while using the grab CLI.
+/// Errors that can occur while using the CLI.
 #[derive(Debug)]
 pub enum CliError {
     /// I/O error
@@ -26,5 +26,15 @@ impl From<num::ParseIntError> for CliError {
 impl From<regex::Error> for CliError {
     fn from(err: regex::Error) -> Self {
         CliError::Regex(err)
+    }
+}
+
+impl Display for CliError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            CliError::Io(ref err) => err.fmt(f),
+            CliError::Parse(ref err) => err.fmt(f),
+            CliError::Regex(ref err) => err.fmt(f),
+        }
     }
 }

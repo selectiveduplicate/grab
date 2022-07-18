@@ -1,5 +1,6 @@
 use crate::lib::error::CliError;
 use colored::Colorize;
+use regex::RegexBuilder;
 
 /// Contains colors to apply to patterns like group separators and matches
 pub enum Colors {
@@ -23,4 +24,13 @@ impl Colors {
 /// Parses the context number.
 pub fn parse_context_number(n: Option<&str>) -> Result<usize, CliError> {
     n.unwrap().parse::<usize>().map_err(|err| err.into())
+}
+
+/// Compiles the regular expression given by `p`.
+pub fn compile_regex(p: &str, is_case_insensitive: bool) -> Result<regex::Regex, CliError> {
+    let re = match is_case_insensitive {
+        true => RegexBuilder::new(p).case_insensitive(true).build()?,
+        false => RegexBuilder::new(p).build()?,
+    };
+    Ok(re)
 }
