@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::{self, BufRead, BufReader, Write};
 use std::path::Path;
 
-use crate::fatal;
+use crate::{fatal, getwriter};
 use crate::lib::error::CliError;
 use crate::lib::flag::Flags;
 use crate::lib::utils::{parse_context_number, Colors};
@@ -276,9 +276,7 @@ pub fn prepare_and_choose(
         let stdin = io::stdin();
         let mut buffer = String::new();
         while stdin.read_line(&mut buffer).is_ok() {
-            let stdout = std::io::stdout();
-            let handle = stdout.lock();
-            let writer = std::io::BufWriter::new(handle);
+            let writer = getwriter!();
             choose_process(
                 buffer.as_bytes(),
                 re.clone(),
@@ -292,9 +290,7 @@ pub fn prepare_and_choose(
     } else {
         let file = File::open(path)?;
         let reader = BufReader::new(file);
-        let stdout = std::io::stdout();
-        let handle = stdout.lock();
-        let writer = std::io::BufWriter::new(handle);
+        let writer = getwriter!();
         choose_process(
             reader,
             re,

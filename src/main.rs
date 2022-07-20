@@ -6,16 +6,6 @@ use lib::cli::Cli;
 use lib::flag::Flags;
 use lib::process::prepare_and_choose;
 
-/// Writes to the standard error stream and terminates the current process.
-#[macro_export]
-macro_rules! fatal {
-    ($($tt:tt)*) => {{
-        use std::io::Write;
-        writeln!(&mut ::std::io::stderr(), $($tt)*).unwrap();
-        ::std::process::exit(1)
-    }}
-}
-
 fn main() {
     let app = Cli::new();
     let args = app.parse();
