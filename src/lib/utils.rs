@@ -3,27 +3,15 @@ use crate::lib::error::CliError;
 use colored::Colorize;
 use regex::RegexBuilder;
 
-/// Writes to the standard error stream and terminates the current process.
-#[macro_export]
-macro_rules! fatal {
-    ($($tt:tt)*) => {{
-        use std::io::Write;
-        writeln!(&mut ::std::io::stderr(), $($tt)*).unwrap();
-        ::std::process::exit(1)
-    }}
-}
-
 /// Creates a new `BufWriter` object to write to the standard output stream.
 #[macro_export]
 macro_rules! getwriter {
-    () => {
-        {
-            let stdout = std::io::stdout();
-            let handle = stdout.lock();
-            let writer = std::io::BufWriter::new(handle);
-            writer
-        }
-    };
+    () => {{
+        let stdout = std::io::stdout();
+        let handle = stdout.lock();
+        let writer = std::io::BufWriter::new(handle);
+        writer
+    }};
 }
 
 /// Contains colors to apply to patterns like group separators and matches

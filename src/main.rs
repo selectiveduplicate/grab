@@ -5,10 +5,7 @@ mod lib;
 use lib::cli::Cli;
 use lib::flag::Flags;
 use lib::process::prepare_and_choose;
-<<<<<<< HEAD
 use lib::utils::{parse_context_number, ContextKind};
-=======
->>>>>>> 68ad61a3690d9fc31270e531c2e4e3a18bdfc56c
 
 fn main() {
     let app = Cli::new();
