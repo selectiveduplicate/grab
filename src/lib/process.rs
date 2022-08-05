@@ -3,6 +3,10 @@ use std::fs::File;
 use std::io::{self, BufRead, BufReader, Write};
 use std::path::Path;
 
+<<<<<<< HEAD
+=======
+use crate::{fatal, getwriter};
+>>>>>>> 68ad61a3690d9fc31270e531c2e4e3a18bdfc56c
 use crate::lib::error::CliError;
 use crate::lib::flag::Flags;
 use crate::lib::utils::{Colors, ContextKind};
@@ -275,9 +279,7 @@ pub(crate) fn prepare_and_choose(
         let stdin = io::stdin();
         let mut buffer = String::new();
         while stdin.read_line(&mut buffer).is_ok() {
-            let stdout = std::io::stdout();
-            let handle = stdout.lock();
-            let writer = std::io::BufWriter::new(handle);
+            let writer = getwriter!();
             choose_process(
                 buffer.as_bytes(),
                 re.clone(),
@@ -291,10 +293,22 @@ pub(crate) fn prepare_and_choose(
     } else {
         let file = File::open(path)?;
         let reader = BufReader::new(file);
+<<<<<<< HEAD
         let stdout = std::io::stdout();
         let handle = stdout.lock();
         let writer = std::io::BufWriter::new(handle);
         choose_process(reader, re, writer, flags, context, group_separator)?;
+=======
+        let writer = getwriter!();
+        choose_process(
+            reader,
+            re,
+            writer,
+            flags,
+            context_details,
+            group_separator,
+        )?;
+>>>>>>> 68ad61a3690d9fc31270e531c2e4e3a18bdfc56c
     }
     Ok(())
 }
