@@ -1,9 +1,10 @@
+use crate::fatal;
 use crate::lib::error::CliError;
 use colored::Colorize;
 use regex::RegexBuilder;
 
 /// Contains colors to apply to patterns like group separators and matches
-pub enum Colors {
+pub(crate) enum Colors {
     Red,
     Green,
     Blue,
@@ -12,7 +13,7 @@ pub enum Colors {
 impl Colors {
     /// Colorizes a `pattern`. Based on the variant of `Colors` provided, it
     /// calls the appropriate function of the `Colorize` trait.
-    pub fn colorize_pattern(color: Self, pattern: &str) -> String {
+    pub(crate) fn colorize_pattern(color: Self, pattern: &str) -> String {
         match color {
             Self::Red => pattern.red().to_string(),
             Self::Green => pattern.green().to_string(),
@@ -21,13 +22,27 @@ impl Colors {
     }
 }
 
-/// Parses the context number.
-pub fn parse_context_number(n: Option<&str>) -> Result<usize, CliError> {
-    n.unwrap().parse::<usize>().map_err(|err| err.into())
+/// Represents the type of context lines.
+#[derive(Clone, Copy)]
+pub(crate) enum ContextKind {
+    /// Trailing context
+    After(usize),
+    /// Leading context
+    Before(usize),
+    /// Both trailing and leading
+    AfterAndBefore(usize),
+    /// No context
+    None,
+}
+
+/// Tries to parse the context number.
+pub(crate) fn parse_context_number(ctx: &str) -> usize {
+    ctx.parse::<usize>()
+        .map_or_else(|err| fatal!("error: {err}"), |ctx| ctx)
 }
 
 /// Compiles the regular expression given by `p`.
-pub fn compile_regex(p: &str, is_case_insensitive: bool) -> Result<regex::Regex, CliError> {
+pub(crate) fn compile_regex(p: &str, is_case_insensitive: bool) -> Result<regex::Regex, CliError> {
     let re = match is_case_insensitive {
         true => RegexBuilder::new(p).case_insensitive(true).build()?,
         false => RegexBuilder::new(p).build()?,

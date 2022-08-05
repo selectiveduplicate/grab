@@ -1,13 +1,13 @@
 use clap::{App, Arg, ArgMatches};
 
-///Struct encapsulating the CLI and its arguments
-pub struct Cli<'cli, 'a> {
+///Struct encapsulating the CLI and its arguments.
+pub(crate) struct Cli<'cli, 'a> {
     app: App<'cli, 'a>,
 }
 
 impl<'cli, 'a> Cli<'cli, 'a> {
-    ///Returns a new `clap::App` instance
-    pub fn new() -> Self {
+    ///Returns a new `clap::App` instance.
+    pub(crate) fn new() -> Self {
         let app = App::new("grab")
         .version("1.0")
         .author("Abu Sakib <mabusakib@gmail.com>")
@@ -99,8 +99,8 @@ impl<'cli, 'a> Cli<'cli, 'a> {
         Self { app }
     }
 
-    ///Parses all the command-line arguments
-    pub fn parse(self) -> ArgMatches<'cli> {
+    ///Parses all the command-line arguments.
+    pub(crate) fn parse(self) -> ArgMatches<'cli> {
         self.app.get_matches()
     }
 }

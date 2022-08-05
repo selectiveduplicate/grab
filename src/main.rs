@@ -5,16 +5,7 @@ mod lib;
 use lib::cli::Cli;
 use lib::flag::Flags;
 use lib::process::prepare_and_choose;
-
-/// Writes to the standard error stream and terminates the current process.
-#[macro_export]
-macro_rules! fatal {
-    ($($tt:tt)*) => {{
-        use std::io::Write;
-        writeln!(&mut ::std::io::stderr(), $($tt)*).unwrap();
-        ::std::process::exit(1)
-    }}
-}
+use lib::utils::{parse_context_number, ContextKind};
 
 fn main() {
     let app = Cli::new();
@@ -23,19 +14,28 @@ fn main() {
     let pattern = args.value_of("pattern").unwrap();
     let input = Path::new(args.value_of("input").unwrap_or("STDIN"));
     let group_separator = args.value_of("group_separator").unwrap_or("---");
-    let context_details: [Option<&str>; 3] = [
-        args.value_of("after_context"),
-        args.value_of("before_context"),
-        args.value_of("context"),
-    ];
 
     let flags = Flags::set_flags(&args);
+
+    let context_kind = if args.is_present("after_context") {
+        ContextKind::After(parse_context_number(
+            args.value_of("after_context").unwrap(),
+        ))
+    } else if args.is_present("before_context") {
+        ContextKind::Before(parse_context_number(
+            args.value_of("before_context").unwrap(),
+        ))
+    } else if args.is_present("context") {
+        ContextKind::AfterAndBefore(parse_context_number(args.value_of("context").unwrap()))
+    } else {
+        ContextKind::None
+    };
 
     if let Err(e) = prepare_and_choose(
         (pattern, flags.ignore_case),
         input,
         &flags,
-        context_details,
+        context_kind,
         group_separator,
     ) {
         fatal!("{e}");

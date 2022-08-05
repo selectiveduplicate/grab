@@ -3,10 +3,9 @@ use std::fs::File;
 use std::io::{self, BufRead, BufReader, Write};
 use std::path::Path;
 
-use crate::fatal;
 use crate::lib::error::CliError;
 use crate::lib::flag::Flags;
-use crate::lib::utils::{parse_context_number, Colors};
+use crate::lib::utils::{Colors, ContextKind};
 
 use super::utils::compile_regex;
 
@@ -264,11 +263,11 @@ fn print_with_context<T: BufRead + Sized>(
 
 /// Checks whether `path` is the standard input stream or a file
 /// and calls `choose_process` accordingly.
-pub fn prepare_and_choose(
+pub(crate) fn prepare_and_choose(
     needle: (&str, bool),
     path: &std::path::Path,
     flags: &Flags,
-    context_details: [Option<&str>; 3],
+    context: ContextKind,
     group_separator: &str,
 ) -> Result<(), CliError> {
     let re = compile_regex(needle.0, needle.1)?;
@@ -284,7 +283,7 @@ pub fn prepare_and_choose(
                 re.clone(),
                 writer,
                 flags,
-                context_details,
+                context,
                 group_separator,
             )?;
             buffer.clear();
@@ -295,51 +294,42 @@ pub fn prepare_and_choose(
         let stdout = std::io::stdout();
         let handle = stdout.lock();
         let writer = std::io::BufWriter::new(handle);
-        choose_process(
-            reader,
-            re,
-            writer,
-            flags,
-            context_details,
-            group_separator,
-        )?;
+        choose_process(reader, re, writer, flags, context, group_separator)?;
     }
     Ok(())
 }
 
-/// Checks different fields of `flags` struct and calls
-/// the appropriate method.
+/// Checks the runtime arguments provided by the user and
+/// calls the appropriate method.
 fn choose_process<T: BufRead + Sized>(
     mut reader: T,
     re: regex::Regex,
     writer: impl Write,
     flags: &Flags,
-    context_details: [Option<&str>; 3],
+    context: ContextKind,
     group_separator: &str,
 ) -> Result<(), CliError> {
     if flags.count {
         println!("{}", count_matches(reader, re));
-        Ok(())
-    } else if flags.after_context {
-        let context = parse_context_number(context_details[0])
-            .map_or_else(|err| fatal!("error: {err}"), |ctx| ctx);
-        print_with_after_context(&mut reader, re, flags, context, group_separator, writer)?;
-        Ok(())
-    } else if flags.before_context {
-        let context = parse_context_number(context_details[1])?;
-        print_with_before_context(&mut reader, re, flags, context, group_separator, writer)?;
-        Ok(())
-    } else if flags.context {
-        let context = parse_context_number(context_details[2])?;
-        print_with_context(&mut reader, re, flags, context, group_separator, writer)?;
-        Ok(())
+        return Ok(());
     } else if flags.invert_match {
         print_invert_matches(reader, re, flags, writer)?;
-        Ok(())
-    } else {
-        print_matches(reader, re, flags, writer)?;
-        Ok(())
+        return Ok(());
     }
+    match context {
+        ContextKind::After(after_ctx) => {
+            print_with_after_context(&mut reader, re, flags, after_ctx, group_separator, writer)?
+        }
+        ContextKind::Before(before_ctx) => {
+            print_with_before_context(&mut reader, re, flags, before_ctx, group_separator, writer)?
+        }
+
+        ContextKind::AfterAndBefore(both_ctx) => {
+            print_with_context(&mut reader, re, flags, both_ctx, group_separator, writer)?
+        }
+        ContextKind::None => print_matches(reader, re, flags, writer)?,
+    };
+    Ok(())
 }
 
 /// Prints the lines containing the matches found.
@@ -474,9 +464,6 @@ mod tests {
             colorize: false,
             ignore_case: false,
             invert_match: false,
-            after_context: false,
-            before_context: false,
-            context: false,
         };
         let (reader, regex, mut writer) = test_inputs("distress");
         print_matches(reader, regex, &flags, &mut writer).unwrap();
@@ -496,12 +483,17 @@ mod tests {
             colorize: false,
             ignore_case: false,
             invert_match: false,
-            after_context: false,
-            before_context: false,
-            context: false,
         };
         let (reader, regex, mut writer) = test_inputs("distress");
-        print_matches(reader, regex, &flags, &mut writer).unwrap();
+        choose_process(
+            reader,
+            regex,
+            &mut writer,
+            &flags,
+            ContextKind::None,
+            "####",
+        )
+        .unwrap();
         assert_eq!(
             writer,
             "distresses me like a letter of farewell. I feel as if I’m always on the\n"
@@ -518,12 +510,17 @@ mod tests {
             colorize: false,
             ignore_case: false,
             invert_match: false,
-            after_context: true,
-            before_context: false,
-            context: false,
         };
         let (reader, regex, mut writer) = test_inputs("distress");
-        print_with_after_context(reader, regex, &flags, 3, "####", &mut writer).unwrap();
+        choose_process(
+            reader,
+            regex,
+            &mut writer,
+            &flags,
+            ContextKind::After(3),
+            "####",
+        )
+        .unwrap();
         assert_eq!(
             writer,
             "distresses me like a letter of farewell. I feel as if I’m always on the
@@ -543,12 +540,17 @@ reach somewhere. But there’s this heavy slumber that moves from one\n"
             colorize: false,
             ignore_case: false,
             invert_match: false,
-            after_context: true,
-            before_context: false,
-            context: false,
         };
         let (reader, regex, mut writer) = test_inputs("distress");
-        print_with_after_context(reader, regex, &flags, 3, "####", &mut writer).unwrap();
+        choose_process(
+            reader,
+            regex,
+            &mut writer,
+            &flags,
+            ContextKind::After(3),
+            "####",
+        )
+        .unwrap();
         assert_eq!(
             writer,
             "\u{1b}[32m6\u{1b}[0m: distresses me like a letter of farewell. I feel as if I’m always on the
@@ -561,19 +563,24 @@ reach somewhere. But there’s this heavy slumber that moves from one\n"
     }
 
     #[test]
-    fn after_context_with_for_ten_char_words_and_pattern_color() {
+    fn after_context_with_ten_char_words_and_color() {
         let flags = Flags {
             count: false,
             line_number: false,
             colorize: true,
             ignore_case: false,
             invert_match: false,
-            after_context: true,
-            before_context: false,
-            context: false,
         };
         let (reader, regex, mut writer) = test_inputs(r"\b\w{10}\b");
-        print_with_after_context(reader, regex, &flags, 2, "####", &mut writer).unwrap();
+        choose_process(
+            reader,
+            regex,
+            &mut writer,
+            &flags,
+            ContextKind::After(2),
+            "####",
+        )
+        .unwrap();
         assert_eq!(
             writer,
             "confused landscape, along with \u{1b}[31meverything\u{1b}[0m else.
@@ -607,12 +614,17 @@ there are other people with a soul like our own. My vanity consists of\n"
             colorize: true,
             ignore_case: false,
             invert_match: false,
-            after_context: false,
-            before_context: true,
-            context: false,
         };
         let (reader, regex, mut writer) = test_inputs("distress");
-        print_with_before_context(reader, regex, &flags, 3, "####", &mut writer).unwrap();
+        choose_process(
+            reader,
+            regex,
+            &mut writer,
+            &flags,
+            ContextKind::Before(3),
+            "####",
+        )
+        .unwrap();
         assert_eq!(
             writer,
             "confused landscape, along with everything else.
@@ -632,12 +644,17 @@ In these times when an abyss opens up in my soul, the tiniest detail
             colorize: true,
             ignore_case: false,
             invert_match: false,
-            after_context: false,
-            before_context: true,
-            context: false,
         };
         let (reader, regex, mut writer) = test_inputs("distress");
-        print_with_before_context(reader, regex, &flags, 3, "####", &mut writer).unwrap();
+        choose_process(
+            reader,
+            regex,
+            &mut writer,
+            &flags,
+            ContextKind::Before(3),
+            "####",
+        )
+        .unwrap();
         assert_eq!(
             writer,
             "\u{1b}[32m3\u{1b}[0m: confused landscape, along with everything else.
@@ -657,12 +674,17 @@ In these times when an abyss opens up in my soul, the tiniest detail
             colorize: true,
             ignore_case: false,
             invert_match: false,
-            after_context: false,
-            before_context: false,
-            context: true,
         };
         let (reader, regex, mut writer) = test_inputs("like");
-        print_with_context(reader, regex, &flags, 2, "####", &mut writer).unwrap();
+        choose_process(
+            reader,
+            regex,
+            &mut writer,
+            &flags,
+            ContextKind::AfterAndBefore(2),
+            "####",
+        )
+        .unwrap();
         assert_eq!(
             writer,
             "\u{1b}[32m4\u{1b}[0m: 
@@ -705,12 +727,17 @@ In these times when an abyss opens up in my soul, the tiniest detail
             colorize: true,
             ignore_case: false,
             invert_match: false,
-            after_context: false,
-            before_context: false,
-            context: true,
         };
         let (reader, regex, mut writer) = test_inputs("like");
-        print_with_context(reader, regex, &flags, 2, "####", &mut writer).unwrap();
+        choose_process(
+            reader,
+            regex,
+            &mut writer,
+            &flags,
+            ContextKind::AfterAndBefore(2),
+            "####",
+        )
+        .unwrap();
         assert_eq!(
             writer,
             "
@@ -753,9 +780,6 @@ there are other people with a soul \u{1b}[31mlike\u{1b}[0m our own. My vanity co
             colorize: false,
             ignore_case: false,
             invert_match: true,
-            after_context: false,
-            before_context: false,
-            context: false,
         };
         let (reader, regex, mut writer) = test_inputs("like");
         print_invert_matches(reader, regex, &flags, &mut writer).unwrap();
@@ -794,9 +818,6 @@ We all have our vanity, and that vanity is our way of forgetting that\n"
             colorize: false,
             ignore_case: false,
             invert_match: true,
-            after_context: false,
-            before_context: false,
-            context: false,
         };
         let (reader, regex, mut writer) = test_inputs("like");
         print_invert_matches(reader, regex, &flags, &mut writer).unwrap();
@@ -835,12 +856,17 @@ We all have our vanity, and that vanity is our way of forgetting that\n"
             colorize: true,
             ignore_case: false,
             invert_match: false,
-            after_context: false,
-            before_context: false,
-            context: false,
         };
-        let (reader, re, mut writer) = test_inputs(r"\bour\b");
-        print_matches(reader, re, &flags, &mut writer).unwrap();
+        let (reader, regex, mut writer) = test_inputs(r"\bour\b");
+        choose_process(
+            reader,
+            regex,
+            &mut writer,
+            &flags,
+            ContextKind::None,
+            "####",
+        )
+        .unwrap();
         assert_eq!(
             writer,
             "We all have \u{1b}[31mour\u{1b}[0m vanity, and that vanity is \u{1b}[31mour\u{1b}[0m way of forgetting that

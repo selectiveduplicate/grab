@@ -1,5 +1,15 @@
 use std::{fmt::Display, io, num};
 
+/// Writes to the standard error stream and terminates the current process.
+#[macro_export]
+macro_rules! fatal {
+    ($($tt:tt)*) => {{
+        use std::io::Write;
+        writeln!(&mut ::std::io::stderr(), $($tt)*).unwrap();
+        ::std::process::exit(1)
+    }}
+}
+
 /// Errors that can occur while using the CLI.
 #[derive(Debug)]
 pub enum CliError {

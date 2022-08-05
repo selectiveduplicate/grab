@@ -20,9 +20,6 @@ pub struct Flags {
     pub colorize: bool,
     pub ignore_case: bool,
     pub invert_match: bool,
-    pub after_context: bool,
-    pub before_context: bool,
-    pub context: bool,
 }
 
 impl Flags {
@@ -38,9 +35,6 @@ impl Flags {
         flags.colorize = a.is_present("color");
         flags.ignore_case = a.is_present("ignore_case");
         flags.invert_match = a.is_present("invert_match");
-        flags.after_context = a.is_present("after_context");
-        flags.before_context = a.is_present("before_context");
-        flags.context = a.is_present("context");
 
         flags
     }
