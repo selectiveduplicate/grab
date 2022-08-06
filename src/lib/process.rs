@@ -6,9 +6,7 @@ use std::path::Path;
 use crate::getwriter;
 use crate::lib::error::CliError;
 use crate::lib::flag::Flags;
-use crate::lib::utils::{Colors, ContextKind};
-
-use super::utils::compile_regex;
+use crate::lib::utils::{Colors, ContextKind, compile_regex, parse_context_number};
 
 /// Calculates the number of matches found
 /// according to the regex pattern and returns it.
@@ -315,13 +313,16 @@ fn choose_process<T: BufRead + Sized>(
     }
     match context {
         ContextKind::After(after_ctx) => {
+            let after_ctx = parse_context_number(after_ctx)?;
             print_with_after_context(&mut reader, re, flags, after_ctx, group_separator, writer)?
         }
         ContextKind::Before(before_ctx) => {
+            let before_ctx = parse_context_number(before_ctx)?;
             print_with_before_context(&mut reader, re, flags, before_ctx, group_separator, writer)?
         }
 
         ContextKind::AfterAndBefore(both_ctx) => {
+            let both_ctx = parse_context_number(both_ctx)?;
             print_with_context(&mut reader, re, flags, both_ctx, group_separator, writer)?
         }
         ContextKind::None => print_matches(reader, re, flags, writer)?,
@@ -514,7 +515,7 @@ mod tests {
             regex,
             &mut writer,
             &flags,
-            ContextKind::After(3),
+            ContextKind::After("3"),
             "####",
         )
         .unwrap();
@@ -544,7 +545,7 @@ reach somewhere. But there’s this heavy slumber that moves from one\n"
             regex,
             &mut writer,
             &flags,
-            ContextKind::After(3),
+            ContextKind::After("3"),
             "####",
         )
         .unwrap();
@@ -574,7 +575,7 @@ reach somewhere. But there’s this heavy slumber that moves from one\n"
             regex,
             &mut writer,
             &flags,
-            ContextKind::After(2),
+            ContextKind::After("2"),
             "####",
         )
         .unwrap();
@@ -618,7 +619,7 @@ there are other people with a soul like our own. My vanity consists of\n"
             regex,
             &mut writer,
             &flags,
-            ContextKind::Before(3),
+            ContextKind::Before("3"),
             "####",
         )
         .unwrap();
@@ -648,7 +649,7 @@ In these times when an abyss opens up in my soul, the tiniest detail
             regex,
             &mut writer,
             &flags,
-            ContextKind::Before(3),
+            ContextKind::Before("3"),
             "####",
         )
         .unwrap();
@@ -678,7 +679,7 @@ In these times when an abyss opens up in my soul, the tiniest detail
             regex,
             &mut writer,
             &flags,
-            ContextKind::AfterAndBefore(2),
+            ContextKind::AfterAndBefore("2"),
             "####",
         )
         .unwrap();
@@ -731,7 +732,7 @@ In these times when an abyss opens up in my soul, the tiniest detail
             regex,
             &mut writer,
             &flags,
-            ContextKind::AfterAndBefore(2),
+            ContextKind::AfterAndBefore("2"),
             "####",
         )
         .unwrap();

@@ -1,4 +1,3 @@
-use crate::fatal;
 use crate::lib::error::CliError;
 use colored::Colorize;
 use regex::RegexBuilder;
@@ -35,21 +34,20 @@ impl Colors {
 
 /// Represents the type of context lines.
 #[derive(Clone, Copy)]
-pub(crate) enum ContextKind {
+pub(crate) enum ContextKind<'ctx> {
     /// Trailing context
-    After(usize),
+    After(&'ctx str),
     /// Leading context
-    Before(usize),
+    Before(&'ctx str),
     /// Both trailing and leading
-    AfterAndBefore(usize),
+    AfterAndBefore(&'ctx str),
     /// No context
     None,
 }
 
 /// Tries to parse the context number.
-pub(crate) fn parse_context_number(ctx: &str) -> usize {
-    ctx.parse::<usize>()
-        .map_or_else(|err| fatal!("error: {err}"), |ctx| ctx)
+pub(crate) fn parse_context_number(ctx: &str) -> Result<usize, CliError> {
+    ctx.parse::<usize>().map_err(|err| err.into())
 }
 
 /// Compiles the regular expression given by `p`.

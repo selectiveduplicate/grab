@@ -5,7 +5,7 @@ mod lib;
 use lib::cli::Cli;
 use lib::flag::Flags;
 use lib::process::prepare_and_choose;
-use lib::utils::{parse_context_number, ContextKind};
+use lib::utils::ContextKind;
 
 fn main() {
     let app = Cli::new();
@@ -18,15 +18,11 @@ fn main() {
     let flags = Flags::set_flags(&args);
 
     let context_kind = if args.is_present("after_context") {
-        ContextKind::After(parse_context_number(
-            args.value_of("after_context").unwrap(),
-        ))
+        ContextKind::After(args.value_of("after_context").unwrap())
     } else if args.is_present("before_context") {
-        ContextKind::Before(parse_context_number(
-            args.value_of("before_context").unwrap(),
-        ))
+        ContextKind::Before(args.value_of("before_context").unwrap())
     } else if args.is_present("context") {
-        ContextKind::AfterAndBefore(parse_context_number(args.value_of("context").unwrap()))
+        ContextKind::AfterAndBefore(args.value_of("context").unwrap())
     } else {
         ContextKind::None
     };
@@ -38,6 +34,6 @@ fn main() {
         context_kind,
         group_separator,
     ) {
-        fatal!("{e}");
+        fatal!("error: {e}");
     }
 }
