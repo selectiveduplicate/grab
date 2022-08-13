@@ -8,8 +8,7 @@ use lib::process::prepare_and_choose;
 use lib::utils::ContextKind;
 
 fn main() {
-    let app = Cli::new();
-    let args = app.parse();
+    let args = Cli::new().parse();
 
     let pattern = args.value_of("pattern").unwrap();
     let input = Path::new(args.value_of("input").unwrap_or("STDIN"));

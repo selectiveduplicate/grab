@@ -1,11 +1,11 @@
 use clap::{App, Arg, ArgMatches};
 
 ///Struct encapsulating the CLI and its arguments.
-pub(crate) struct Cli<'cli, 'a> {
-    app: App<'cli, 'a>,
+pub(crate) struct Cli<'cli> {
+    app: App<'cli>,
 }
 
-impl<'cli, 'a> Cli<'cli, 'a> {
+impl<'cli> Cli<'cli> {
     ///Returns a new `clap::App` instance.
     pub(crate) fn new() -> Self {
         let app = App::new("grab")
@@ -27,7 +27,7 @@ impl<'cli, 'a> Cli<'cli, 'a> {
         .arg(
             Arg::with_name("count")
                 .help("Supresses normal output and instead prints number of matching lines")
-                .short("c")
+                .short('c')
                 .long("count")
                 .takes_value(false)
                 .required(false),
@@ -35,7 +35,7 @@ impl<'cli, 'a> Cli<'cli, 'a> {
         .arg(
             Arg::with_name("line_number")
             .help("Prefixes each line of output with the 1-based line number within its input file")
-            .short("n")
+            .short('n')
             .long("line-number")
             .takes_value(false)
             .required(false)
@@ -51,7 +51,7 @@ impl<'cli, 'a> Cli<'cli, 'a> {
             Arg::with_name("ignore_case")
             .help("Ignores case distinctions (uppercase and lowercase) in patterns and input data, so that characters that differ only in case match each other")
             .long("ignore-case")
-            .short("i")
+            .short('i')
             .takes_value(false)
             .required(false)
         )
@@ -59,7 +59,7 @@ impl<'cli, 'a> Cli<'cli, 'a> {
             Arg::with_name("invert_match")
             .help("Inverts the sense of matching, to select non-matching lines")
             .long("invert-match")
-            .short("v")
+            .short('v')
             .takes_value(false)
             .required(false)
         )
@@ -67,7 +67,7 @@ impl<'cli, 'a> Cli<'cli, 'a> {
             Arg::with_name("after_context")
             .help("Prints NUM lines of trailing context after the matching lines. Each group of match and its context is separated by a separator as described by the --group-separator option")
             .long("after-context")
-            .short("A")
+            .short('A')
             .value_name("NUM")
             .takes_value(true)
             .required(false)
@@ -75,7 +75,7 @@ impl<'cli, 'a> Cli<'cli, 'a> {
             Arg::with_name("before_context")
             .help("Prints NUM lines of leading context before the matching lines. Each group of match and its context is separated by a separator as described by the --group-separator option")
             .long("before-context")
-            .short("B")
+            .short('B')
             .value_name("NUM")
             .takes_value(true)
             .required(false)
@@ -83,7 +83,7 @@ impl<'cli, 'a> Cli<'cli, 'a> {
             Arg::with_name("context")
             .help("Prints NUM lines of context lines before and after the matching lines. Each group of match and its context is separated by a separator as described by the --group-separator option")
             .long("context")
-            .short("C")
+            .short('C')
             .value_name("NUM")
             .takes_value(true)
             .required(false)
@@ -100,7 +100,7 @@ impl<'cli, 'a> Cli<'cli, 'a> {
     }
 
     ///Parses all the command-line arguments.
-    pub(crate) fn parse(self) -> ArgMatches<'cli> {
+    pub(crate) fn parse(self) -> ArgMatches {
         self.app.get_matches()
     }
 }
