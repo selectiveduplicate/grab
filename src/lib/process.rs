@@ -1,12 +1,12 @@
 use regex::Regex;
 use std::fs::File;
-use std::io::{self, BufRead, BufReader, Write};
+use std::io::{self, BufRead, BufReader, Read, Write};
 use std::path::Path;
 
 use crate::getwriter;
 use crate::lib::error::CliError;
 use crate::lib::flag::Flags;
-use crate::lib::utils::{Colors, ContextKind, compile_regex, parse_context_number};
+use crate::lib::utils::{compile_regex, parse_context_number, Colors, ContextKind};
 
 /// Calculates the number of matches found
 /// according to the regex pattern and returns it.
@@ -272,19 +272,9 @@ pub(crate) fn prepare_and_choose(
     let re = compile_regex(needle.0, needle.1)?;
     if path == Path::new("STDIN") {
         let stdin = io::stdin();
-        let mut buffer = String::new();
-        while stdin.read_line(&mut buffer).is_ok() {
-            let writer = getwriter!();
-            choose_process(
-                buffer.as_bytes(),
-                re.clone(),
-                writer,
-                flags,
-                context,
-                group_separator,
-            )?;
-            buffer.clear();
-        }
+        let stdin_reader = BufReader::new(stdin.lock());
+        let writer = getwriter!();
+        choose_process(stdin_reader, re, writer, flags, context, group_separator)?;
     } else {
         let file = File::open(path)?;
         let reader = BufReader::new(file);
