@@ -1,6 +1,6 @@
 use regex::Regex;
 use std::fs::File;
-use std::io::{self, BufRead, BufReader, Read, Write};
+use std::io::{self, BufRead, BufReader, Write};
 use std::path::Path;
 
 use crate::getwriter;
@@ -53,16 +53,16 @@ fn print_with_after_context<T: BufRead + Sized>(
             let upper_bound = matched_number + context_number;
             if (i >= *matched_number) && (i <= upper_bound) {
                 if (i == *matched_number) && (flags.colorize) {
-                    let match_iter = re.find_iter(line);
                     let mut matched_line = line.clone();
-                    for mat in match_iter {
+                    // colorize the matches
+                    re.find_iter(line).for_each(|matched| {
                         matched_line = re
                             .replace_all(
                                 &matched_line,
-                                Colors::colorize_pattern(Colors::Red, mat.as_str()),
+                                Colors::colorize_pattern(Colors::Red, matched.as_str()),
                             )
-                            .to_string();
-                    }
+                            .to_string()
+                    });
                     matched_lines_with_number[j].push((i, matched_line))
                 } else {
                     matched_lines_with_number[j].push((i, line.clone()));
@@ -134,16 +134,16 @@ fn print_with_before_context<T: BufRead + Sized>(
             let starting_point = matched_number.saturating_sub(context_number);
             if (i >= starting_point) && (i <= *matched_number) {
                 if (i == *matched_number) && (flags.colorize) {
-                    let match_iter = re.find_iter(line);
                     let mut matched_line = line.clone();
-                    for mat in match_iter {
+                    //colorize the matches
+                    re.find_iter(line).for_each(|matched| {
                         matched_line = re
                             .replace_all(
                                 &matched_line,
-                                Colors::colorize_pattern(Colors::Red, mat.as_str()),
+                                Colors::colorize_pattern(Colors::Red, matched.as_str()),
                             )
-                            .to_string();
-                    }
+                            .to_string()
+                    });
                     matched_lines_with_number[j].push((i, matched_line))
                 } else {
                     matched_lines_with_number[j].push((i, line.clone()));
@@ -214,16 +214,16 @@ fn print_with_context<T: BufRead + Sized>(
             let upper_bound = matched_number + context_number;
             if (i >= lower_bound) && (i <= upper_bound) {
                 if (i == *matched_number) && (flags.colorize) {
-                    let match_iter = re.find_iter(line);
                     let mut matched_line = line.clone();
-                    for mat in match_iter {
+                    //colorize the matches
+                    re.find_iter(line).for_each(|matched| {
                         matched_line = re
                             .replace_all(
                                 &matched_line,
-                                Colors::colorize_pattern(Colors::Red, mat.as_str()),
+                                Colors::colorize_pattern(Colors::Red, matched.as_str()),
                             )
-                            .to_string();
-                    }
+                            .to_string()
+                    });
                     matched_lines_with_number[j].push((i, matched_line))
                 } else {
                     matched_lines_with_number[j].push((i, line.clone()));
