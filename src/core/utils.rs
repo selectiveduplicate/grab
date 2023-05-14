@@ -1,4 +1,4 @@
-use crate::lib::error::CliError;
+use crate::core::error::CliError;
 use colored::Colorize;
 use regex::RegexBuilder;
 

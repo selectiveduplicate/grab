@@ -4,9 +4,9 @@ use std::io::{self, BufRead, BufReader, Write};
 use std::path::Path;
 
 use crate::getwriter;
-use crate::lib::error::CliError;
-use crate::lib::flag::Flags;
-use crate::lib::utils::{compile_regex, parse_context_number, Colors, ContextKind};
+use crate::core::error::CliError;
+use crate::core::flag::Flags;
+use crate::core::utils::{compile_regex, parse_context_number, Colors, ContextKind};
 
 /// Calculates the number of matches found
 /// according to the regex pattern and returns it.
@@ -85,15 +85,17 @@ fn print_with_after_context<T: BufRead + Sized>(
                 Colors::colorize_pattern(Colors::Blue, group_separator)
             )?
         }
-        for (i, line) in matched_line.iter() {
-            if flags.line_number {
+        if flags.line_number {
+            for (i, line) in matched_line.iter() {
                 writeln!(
                     writer,
                     "{}: {}",
                     Colors::colorize_pattern(Colors::Green, &format!("{}", i + 1)),
                     line
                 )?
-            } else {
+            }
+        } else {
+            for (_, line) in matched_line {
                 writeln!(writer, "{}", line)?;
             }
         }
@@ -164,15 +166,17 @@ fn print_with_before_context<T: BufRead + Sized>(
                 Colors::colorize_pattern(Colors::Blue, group_separator)
             )?;
         }
-        for (i, line) in matched_line.iter() {
-            if flags.line_number {
+        if flags.line_number {
+            for (i, line) in matched_line.iter() {
                 writeln!(
                     writer,
                     "{}: {}",
                     Colors::colorize_pattern(Colors::Green, &format!("{}", i + 1)),
                     line
                 )?;
-            } else {
+            }
+        } else {
+            for (_, line) in matched_line.iter() {
                 writeln!(writer, "{}", line)?;
             }
         }
@@ -243,15 +247,17 @@ fn print_with_context<T: BufRead + Sized>(
                 Colors::colorize_pattern(Colors::Blue, group_separator)
             )?;
         }
-        for (i, line) in matched_line.iter() {
-            if flags.line_number {
+        if flags.line_number {
+            for (i, line) in matched_line.iter() {
                 writeln!(
                     writer,
                     "{}: {}",
                     Colors::colorize_pattern(Colors::Green, &format!("{}", i + 1)),
                     line
                 )?;
-            } else {
+            }
+        } else {
+            for (_, line) in matched_line.iter() {
                 writeln!(writer, "{}", line)?;
             }
         }

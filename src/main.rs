@@ -1,11 +1,11 @@
 use std::path::Path;
 
-mod lib;
+mod core;
 
-use lib::cli::Cli;
-use lib::flag::Flags;
-use lib::process::prepare_and_choose;
-use lib::utils::ContextKind;
+use crate::core::cli::Cli;
+use crate::core::flag::Flags;
+use crate::core::process::prepare_and_choose;
+use crate::core::utils::ContextKind;
 
 fn main() {
     let args = Cli::new().parse();
