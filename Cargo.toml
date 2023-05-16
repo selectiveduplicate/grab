@@ -9,4 +9,4 @@ edition = "2018"
 [dependencies]
 regex = "1"
 clap = "3"
-colored = "2"
+owo-colors = "3.5.0"

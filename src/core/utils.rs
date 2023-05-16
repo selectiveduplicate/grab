@@ -1,5 +1,5 @@
 use crate::core::error::CliError;
-use colored::Colorize;
+use owo_colors::OwoColorize;
 use regex::RegexBuilder;
 
 /// Creates a new `BufWriter` object to write to the standard output stream.

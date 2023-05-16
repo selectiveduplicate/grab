@@ -211,11 +211,11 @@ fn print_with_context<T: BufRead + Sized>(
     }
 
     for (j, matched_number) in matched_line_numbers.iter().enumerate() {
+        // Upper and lower bounds of leading and trailing contxt lines
+        // respectively, for each matching line
+        let lower_bound = matched_number.saturating_sub(context_number);
+        let upper_bound = matched_number + context_number;
         for (i, line) in lines.iter().enumerate() {
-            // Upper and lower bounds of leading and trailing contxt lines
-            // respectively, for each matching line
-            let lower_bound = matched_number.saturating_sub(context_number);
-            let upper_bound = matched_number + context_number;
             if (i >= lower_bound) && (i <= upper_bound) {
                 if (i == *matched_number) && (flags.colorize) {
                     let mut matched_line = line.clone();
@@ -353,8 +353,16 @@ fn print_matches<T: BufRead + Sized>(
             (true, true) => {
                 // colorize the patterns
                 for mat in match_iter {
-                    matched_line = format!(
+                    /* matched_line = format!(
                         "{}",
+                        re.replace_all(
+                            &matched_line,
+                            Colors::colorize_pattern(Colors::Red, mat.as_str())
+                        )
+                    ); */
+                    matched_line = format!(
+                        "{}: {}",
+                        Colors::colorize_pattern(Colors::Green, &format!("{}", i + 1)),
                         re.replace_all(
                             &matched_line,
                             Colors::colorize_pattern(Colors::Red, mat.as_str())
@@ -362,11 +370,7 @@ fn print_matches<T: BufRead + Sized>(
                     );
                 }
                 // add colored line numbers
-                matched_line = format!(
-                    "{}: {}",
-                    Colors::colorize_pattern(Colors::Green, &format!("{}", i + 1)),
-                    matched_line
-                );
+                
             }
             (true, false) => {
                 for mat in match_iter {
@@ -463,7 +467,7 @@ mod tests {
         print_matches(reader, regex, &flags, &mut writer).unwrap();
         assert_eq!(
             writer,
-            "\u{1b}[32m6\u{1b}[0m: distresses me like a letter of farewell. I feel as if I’m always on the\n"
+            "\u{1b}[32m6\u{1b}[39m: distresses me like a letter of farewell. I feel as if I’m always on the\n"
                 .as_bytes()
                 .to_vec()
         );
@@ -547,10 +551,10 @@ reach somewhere. But there’s this heavy slumber that moves from one\n"
         .unwrap();
         assert_eq!(
             writer,
-            "\u{1b}[32m6\u{1b}[0m: distresses me like a letter of farewell. I feel as if I’m always on the
-\u{1b}[32m7\u{1b}[0m: verge of waking up. I’m oppressed by the very self that encases me,
-\u{1b}[32m8\u{1b}[0m: asphyxiated by conclusions, and I’d gladly scream if my voice could
-\u{1b}[32m9\u{1b}[0m: reach somewhere. But there’s this heavy slumber that moves from one\n"
+            "\u{1b}[32m6\u{1b}[39m: distresses me like a letter of farewell. I feel as if I’m always on the
+\u{1b}[32m7\u{1b}[39m: verge of waking up. I’m oppressed by the very self that encases me,
+\u{1b}[32m8\u{1b}[39m: asphyxiated by conclusions, and I’d gladly scream if my voice could
+\u{1b}[32m9\u{1b}[39m: reach somewhere. But there’s this heavy slumber that moves from one\n"
                 .as_bytes()
                 .to_vec()
         );
@@ -577,23 +581,23 @@ reach somewhere. But there’s this heavy slumber that moves from one\n"
         .unwrap();
         assert_eq!(
             writer,
-            "confused landscape, along with \u{1b}[31meverything\u{1b}[0m else.
+            "confused landscape, along with \u{1b}[31meverything\u{1b}[39m else.
 
 In these times when an abyss opens up in my soul, the tiniest detail
-\u{1b}[34m####\u{1b}[0m
-\u{1b}[31mdistresses\u{1b}[0m me like a letter of farewell. I feel as if I’m always on the
+\u{1b}[34m####\u{1b}[39m
+\u{1b}[31mdistresses\u{1b}[39m me like a letter of farewell. I feel as if I’m always on the
 verge of waking up. I’m oppressed by the very self that encases me,
 asphyxiated by conclusions, and I’d gladly scream if my voice could
-\u{1b}[34m####\u{1b}[0m
-group of my \u{1b}[31msensations\u{1b}[0m to another, like drifting clouds that make the
+\u{1b}[34m####\u{1b}[39m
+group of my \u{1b}[31msensations\u{1b}[39m to another, like drifting clouds that make the
 half-shaded grass of sprawling fields turn various colours of sun and
 green.
-\u{1b}[34m####\u{1b}[0m
-illusions or moments of calm, large hopes \u{1b}[31mchannelled\u{1b}[0m into the
+\u{1b}[34m####\u{1b}[39m
+illusions or moments of calm, large hopes \u{1b}[31mchannelled\u{1b}[39m into the
 landscape, sorrows like closed rooms, certain voices, a huge weariness,
 the unwritten gospel.
-\u{1b}[34m####\u{1b}[0m
-We all have our vanity, and that vanity is our way of \u{1b}[31mforgetting\u{1b}[0m that
+\u{1b}[34m####\u{1b}[39m
+We all have our vanity, and that vanity is our way of \u{1b}[31mforgetting\u{1b}[39m that
 there are other people with a soul like our own. My vanity consists of\n"
                 .as_bytes()
                 .to_vec()
@@ -624,7 +628,7 @@ there are other people with a soul like our own. My vanity consists of\n"
             "confused landscape, along with everything else.
 
 In these times when an abyss opens up in my soul, the tiniest detail
-\u{1b}[31mdistress\u{1b}[0mes me like a letter of farewell. I feel as if I’m always on the\n"
+\u{1b}[31mdistress\u{1b}[39mes me like a letter of farewell. I feel as if I’m always on the\n"
                 .as_bytes()
                 .to_vec()
         );
@@ -651,10 +655,10 @@ In these times when an abyss opens up in my soul, the tiniest detail
         .unwrap();
         assert_eq!(
             writer,
-            "\u{1b}[32m3\u{1b}[0m: confused landscape, along with everything else.
-\u{1b}[32m4\u{1b}[0m: 
-\u{1b}[32m5\u{1b}[0m: In these times when an abyss opens up in my soul, the tiniest detail
-\u{1b}[32m6\u{1b}[0m: \u{1b}[31mdistress\u{1b}[0mes me like a letter of farewell. I feel as if I’m always on the\n"
+            "\u{1b}[32m3\u{1b}[39m: confused landscape, along with everything else.
+\u{1b}[32m4\u{1b}[39m: 
+\u{1b}[32m5\u{1b}[39m: In these times when an abyss opens up in my soul, the tiniest detail
+\u{1b}[32m6\u{1b}[39m: \u{1b}[31mdistress\u{1b}[39mes me like a letter of farewell. I feel as if I’m always on the\n"
                 .as_bytes()
                 .to_vec()
         );
@@ -681,33 +685,33 @@ In these times when an abyss opens up in my soul, the tiniest detail
         .unwrap();
         assert_eq!(
             writer,
-            "\u{1b}[32m4\u{1b}[0m: 
-\u{1b}[32m5\u{1b}[0m: In these times when an abyss opens up in my soul, the tiniest detail
-\u{1b}[32m6\u{1b}[0m: distresses me \u{1b}[31mlike\u{1b}[0m a letter of farewell. I feel as if I’m always on the
-\u{1b}[32m7\u{1b}[0m: verge of waking up. I’m oppressed by the very self that encases me,
-\u{1b}[32m8\u{1b}[0m: asphyxiated by conclusions, and I’d gladly scream if my voice could
-\u{1b}[34m####\u{1b}[0m
-\u{1b}[32m8\u{1b}[0m: asphyxiated by conclusions, and I’d gladly scream if my voice could
-\u{1b}[32m9\u{1b}[0m: reach somewhere. But there’s this heavy slumber that moves from one
-\u{1b}[32m10\u{1b}[0m: group of my sensations to another, \u{1b}[31mlike\u{1b}[0m drifting clouds that make the
-\u{1b}[32m11\u{1b}[0m: half-shaded grass of sprawling fields turn various colours of sun and
-\u{1b}[32m12\u{1b}[0m: green.
-\u{1b}[34m####\u{1b}[0m
-\u{1b}[32m12\u{1b}[0m: green.
-\u{1b}[32m13\u{1b}[0m: 
-\u{1b}[32m14\u{1b}[0m: I’m \u{1b}[31mlike\u{1b}[0m someone searching at random, not knowing what object he’s
-\u{1b}[32m15\u{1b}[0m: looking for nor where it was hidden. We play hide-and-seek with no
-\u{1b}[32m16\u{1b}[0m: one. There’s a transcendent trick in all of this, a fluid divinity we can
-\u{1b}[34m####\u{1b}[0m
-\u{1b}[32m19\u{1b}[0m: Yes, I reread these pages that represent worthless hours, brief
-\u{1b}[32m20\u{1b}[0m: illusions or moments of calm, large hopes channelled into the
-\u{1b}[32m21\u{1b}[0m: landscape, sorrows \u{1b}[31mlike\u{1b}[0m closed rooms, certain voices, a huge weariness,
-\u{1b}[32m22\u{1b}[0m: the unwritten gospel.
-\u{1b}[32m23\u{1b}[0m: 
-\u{1b}[34m####\u{1b}[0m
-\u{1b}[32m23\u{1b}[0m: 
-\u{1b}[32m24\u{1b}[0m: We all have our vanity, and that vanity is our way of forgetting that
-\u{1b}[32m25\u{1b}[0m: there are other people with a soul \u{1b}[31mlike\u{1b}[0m our own. My vanity consists of\n"
+            "\u{1b}[32m4\u{1b}[39m: 
+\u{1b}[32m5\u{1b}[39m: In these times when an abyss opens up in my soul, the tiniest detail
+\u{1b}[32m6\u{1b}[39m: distresses me \u{1b}[31mlike\u{1b}[39m a letter of farewell. I feel as if I’m always on the
+\u{1b}[32m7\u{1b}[39m: verge of waking up. I’m oppressed by the very self that encases me,
+\u{1b}[32m8\u{1b}[39m: asphyxiated by conclusions, and I’d gladly scream if my voice could
+\u{1b}[34m####\u{1b}[39m
+\u{1b}[32m8\u{1b}[39m: asphyxiated by conclusions, and I’d gladly scream if my voice could
+\u{1b}[32m9\u{1b}[39m: reach somewhere. But there’s this heavy slumber that moves from one
+\u{1b}[32m10\u{1b}[39m: group of my sensations to another, \u{1b}[31mlike\u{1b}[39m drifting clouds that make the
+\u{1b}[32m11\u{1b}[39m: half-shaded grass of sprawling fields turn various colours of sun and
+\u{1b}[32m12\u{1b}[39m: green.
+\u{1b}[34m####\u{1b}[39m
+\u{1b}[32m12\u{1b}[39m: green.
+\u{1b}[32m13\u{1b}[39m: 
+\u{1b}[32m14\u{1b}[39m: I’m \u{1b}[31mlike\u{1b}[39m someone searching at random, not knowing what object he’s
+\u{1b}[32m15\u{1b}[39m: looking for nor where it was hidden. We play hide-and-seek with no
+\u{1b}[32m16\u{1b}[39m: one. There’s a transcendent trick in all of this, a fluid divinity we can
+\u{1b}[34m####\u{1b}[39m
+\u{1b}[32m19\u{1b}[39m: Yes, I reread these pages that represent worthless hours, brief
+\u{1b}[32m20\u{1b}[39m: illusions or moments of calm, large hopes channelled into the
+\u{1b}[32m21\u{1b}[39m: landscape, sorrows \u{1b}[31mlike\u{1b}[39m closed rooms, certain voices, a huge weariness,
+\u{1b}[32m22\u{1b}[39m: the unwritten gospel.
+\u{1b}[32m23\u{1b}[39m: 
+\u{1b}[34m####\u{1b}[39m
+\u{1b}[32m23\u{1b}[39m: 
+\u{1b}[32m24\u{1b}[39m: We all have our vanity, and that vanity is our way of forgetting that
+\u{1b}[32m25\u{1b}[39m: there are other people with a soul \u{1b}[31mlike\u{1b}[39m our own. My vanity consists of\n"
                 .as_bytes()
                 .to_vec()
         );
@@ -736,31 +740,31 @@ In these times when an abyss opens up in my soul, the tiniest detail
             writer,
             "
 In these times when an abyss opens up in my soul, the tiniest detail
-distresses me \u{1b}[31mlike\u{1b}[0m a letter of farewell. I feel as if I’m always on the
+distresses me \u{1b}[31mlike\u{1b}[39m a letter of farewell. I feel as if I’m always on the
 verge of waking up. I’m oppressed by the very self that encases me,
 asphyxiated by conclusions, and I’d gladly scream if my voice could
-\u{1b}[34m####\u{1b}[0m
+\u{1b}[34m####\u{1b}[39m
 asphyxiated by conclusions, and I’d gladly scream if my voice could
 reach somewhere. But there’s this heavy slumber that moves from one
-group of my sensations to another, \u{1b}[31mlike\u{1b}[0m drifting clouds that make the
+group of my sensations to another, \u{1b}[31mlike\u{1b}[39m drifting clouds that make the
 half-shaded grass of sprawling fields turn various colours of sun and
 green.
-\u{1b}[34m####\u{1b}[0m
+\u{1b}[34m####\u{1b}[39m
 green.
 
-I’m \u{1b}[31mlike\u{1b}[0m someone searching at random, not knowing what object he’s
+I’m \u{1b}[31mlike\u{1b}[39m someone searching at random, not knowing what object he’s
 looking for nor where it was hidden. We play hide-and-seek with no
 one. There’s a transcendent trick in all of this, a fluid divinity we can
-\u{1b}[34m####\u{1b}[0m
+\u{1b}[34m####\u{1b}[39m
 Yes, I reread these pages that represent worthless hours, brief
 illusions or moments of calm, large hopes channelled into the
-landscape, sorrows \u{1b}[31mlike\u{1b}[0m closed rooms, certain voices, a huge weariness,
+landscape, sorrows \u{1b}[31mlike\u{1b}[39m closed rooms, certain voices, a huge weariness,
 the unwritten gospel.
 
-\u{1b}[34m####\u{1b}[0m
+\u{1b}[34m####\u{1b}[39m
 
 We all have our vanity, and that vanity is our way of forgetting that
-there are other people with a soul \u{1b}[31mlike\u{1b}[0m our own. My vanity consists of\n"
+there are other people with a soul \u{1b}[31mlike\u{1b}[39m our own. My vanity consists of\n"
                 .as_bytes()
                 .to_vec()
         );
@@ -817,26 +821,26 @@ We all have our vanity, and that vanity is our way of forgetting that\n"
         print_invert_matches(reader, regex, &flags, &mut writer).unwrap();
         assert_eq!(
             writer,
-            "\u{1b}[32m1\u{1b}[0m: Like someone on a hill who tries to make out the people in the
-\u{1b}[32m2\u{1b}[0m: valley, I look down at myself from on high, and I’m a hazy and
-\u{1b}[32m3\u{1b}[0m: confused landscape, along with everything else.
-\u{1b}[32m4\u{1b}[0m: 
-\u{1b}[32m5\u{1b}[0m: In these times when an abyss opens up in my soul, the tiniest detail
-\u{1b}[32m7\u{1b}[0m: verge of waking up. I’m oppressed by the very self that encases me,
-\u{1b}[32m8\u{1b}[0m: asphyxiated by conclusions, and I’d gladly scream if my voice could
-\u{1b}[32m9\u{1b}[0m: reach somewhere. But there’s this heavy slumber that moves from one
-\u{1b}[32m11\u{1b}[0m: half-shaded grass of sprawling fields turn various colours of sun and
-\u{1b}[32m12\u{1b}[0m: green.
-\u{1b}[32m13\u{1b}[0m: 
-\u{1b}[32m15\u{1b}[0m: looking for nor where it was hidden. We play hide-and-seek with no
-\u{1b}[32m16\u{1b}[0m: one. There’s a transcendent trick in all of this, a fluid divinity we can
-\u{1b}[32m17\u{1b}[0m: only hear.
-\u{1b}[32m18\u{1b}[0m: 
-\u{1b}[32m19\u{1b}[0m: Yes, I reread these pages that represent worthless hours, brief
-\u{1b}[32m20\u{1b}[0m: illusions or moments of calm, large hopes channelled into the
-\u{1b}[32m22\u{1b}[0m: the unwritten gospel.
-\u{1b}[32m23\u{1b}[0m: 
-\u{1b}[32m24\u{1b}[0m: We all have our vanity, and that vanity is our way of forgetting that\n"
+            "\u{1b}[32m1\u{1b}[39m: Like someone on a hill who tries to make out the people in the
+\u{1b}[32m2\u{1b}[39m: valley, I look down at myself from on high, and I’m a hazy and
+\u{1b}[32m3\u{1b}[39m: confused landscape, along with everything else.
+\u{1b}[32m4\u{1b}[39m: 
+\u{1b}[32m5\u{1b}[39m: In these times when an abyss opens up in my soul, the tiniest detail
+\u{1b}[32m7\u{1b}[39m: verge of waking up. I’m oppressed by the very self that encases me,
+\u{1b}[32m8\u{1b}[39m: asphyxiated by conclusions, and I’d gladly scream if my voice could
+\u{1b}[32m9\u{1b}[39m: reach somewhere. But there’s this heavy slumber that moves from one
+\u{1b}[32m11\u{1b}[39m: half-shaded grass of sprawling fields turn various colours of sun and
+\u{1b}[32m12\u{1b}[39m: green.
+\u{1b}[32m13\u{1b}[39m: 
+\u{1b}[32m15\u{1b}[39m: looking for nor where it was hidden. We play hide-and-seek with no
+\u{1b}[32m16\u{1b}[39m: one. There’s a transcendent trick in all of this, a fluid divinity we can
+\u{1b}[32m17\u{1b}[39m: only hear.
+\u{1b}[32m18\u{1b}[39m: 
+\u{1b}[32m19\u{1b}[39m: Yes, I reread these pages that represent worthless hours, brief
+\u{1b}[32m20\u{1b}[39m: illusions or moments of calm, large hopes channelled into the
+\u{1b}[32m22\u{1b}[39m: the unwritten gospel.
+\u{1b}[32m23\u{1b}[39m: 
+\u{1b}[32m24\u{1b}[39m: We all have our vanity, and that vanity is our way of forgetting that\n"
                 .as_bytes()
                 .to_vec()
         );
@@ -863,8 +867,8 @@ We all have our vanity, and that vanity is our way of forgetting that\n"
         .unwrap();
         assert_eq!(
             writer,
-            "We all have \u{1b}[31mour\u{1b}[0m vanity, and that vanity is \u{1b}[31mour\u{1b}[0m way of forgetting that
-there are other people with a soul like \u{1b}[31mour\u{1b}[0m own. My vanity consists of\n"
+            "We all have \u{1b}[31mour\u{1b}[39m vanity, and that vanity is \u{1b}[31mour\u{1b}[39m way of forgetting that
+there are other people with a soul like \u{1b}[31mour\u{1b}[39m own. My vanity consists of\n"
                 .as_bytes()
                 .to_vec()
         );
