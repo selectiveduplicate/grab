@@ -1,3 +1,5 @@
+[![justforfunnoreally.dev badge](https://img.shields.io/badge/justforfunnoreally-dev-9ff)](https://justforfunnoreally.dev)
+
 An attempt at making a simple clone of [grep(1)](https://www.man7.org/linux/man-pages/man1/grep.1.html) using Rust.
 
 It builds up on the [lightweight grep-like program](https://github.com/rust-in-action/code/blob/7d7955e9605ca156f6eb7cb5bc9f124c97927d25/ch2/ch2-with-regex.rs) presented in the book [Rust in Action](https://www.manning.com/books/rust-in-action) by Tim McNamara.
